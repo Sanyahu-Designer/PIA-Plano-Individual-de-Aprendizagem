@@ -122,12 +122,13 @@ class NeurodivergenteAdmin(admin.ModelAdmin):
     
     class Media:
         css = {
-            'all': ('neurodivergentes/css/neurodivergentes_forms.css',)
+            'all': ('admin/css/neurodivergentes_forms.css',)
         }
         js = (
             'admin/js/jquery.mask.min.js',
             'admin/js/neurodivergentes_admin.js',
             'admin/js/grupo_familiar.js',
+            'admin/js/cep_autocomplete.js',
         )
 
 @admin.register(CategoriaNeurodivergente)
@@ -135,7 +136,15 @@ class CategoriaNeurodivergentesAdmin(admin.ModelAdmin):
     list_display = ['nome']
     ordering = ['nome']
     search_fields = ['nome']
+    exclude = ['ordem']
     change_list_template = 'admin/cid10/categoriacid10/change_list_material_dashboard.html'
+    change_form_template = 'admin/cid10/categoriacid10/change_form.html'
+    
+    fieldsets = [
+        ('Informações Gerais', {
+            'fields': ['nome', 'descricao']
+        }),
+    ]
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -149,6 +158,14 @@ class CategoriaNeurodivergentesAdmin(admin.ModelAdmin):
         
         return form
 
+    def save_model(self, request, obj, form, change):
+        # Se for uma nova categoria (sem ordem definida), define a ordem automaticamente
+        if not change or obj.ordem == 0:
+            # Obtém o maior valor de ordem existente e adiciona 1
+            max_ordem = CategoriaNeurodivergente.objects.aggregate(models.Max('ordem'))['ordem__max'] or 0
+            obj.ordem = max_ordem + 1
+        super().save_model(request, obj, form, change)
+        
     def __str__(self):
         return self.nome
 
@@ -174,12 +191,57 @@ class CategoriaNeurodivergentesAdmin(admin.ModelAdmin):
 
 @admin.register(CondicaoNeurodivergente)
 class CondicaoNeurodivergentesAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'categoria', 'cid_10', 'ativo']
-    list_filter = ['categoria', 'ativo']
+    list_display = ['nome', 'categoria', 'cid_10']
+    list_filter = ['categoria']
     search_fields = ['nome', 'cid_10']
     ordering = ['nome']
+    exclude = ['ativo']  # Excluir o campo 'ativo' do formulário
     change_list_template = 'admin/cid10/condicaocid10/change_list_material_dashboard.html'
-
+    change_form_template = 'admin/cid10/condicaocid10/change_form.html'
+    
+    fieldsets = [
+        ('Informações Gerais', {
+            'fields': ['categoria', 'nome', 'cid_10', 'descricao']
+        }),
+    ]
+    
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        
+        # Personalizar widget de seleção com classes do Select2
+        for field_name in form.base_fields:
+            form.base_fields[field_name].widget.attrs.update({
+                'class': 'form-control',
+                'style': 'border: 1px solid #d2d6da; border-radius: 0.5rem;'
+            })
+        
+        return form
+        
+    def save_model(self, request, obj, form, change):
+        # Garantir que o campo 'ativo' sempre seja True
+        obj.ativo = True
+        super().save_model(request, obj, form, change)
+    
+    class Media:
+        css = {
+            'all': (
+                'admin/css/base.css',
+                'static/admin/css/edit_form_standard.css',
+                'static/admin/css/form_fields_style.css'
+            )
+        }
+        js = (
+            'admin/js/jquery.js',
+            'admin/js/jquery.init.js',
+            'admin/js/core.js',
+            'admin/js/admin/RelatedObjectLookups.js',
+            'admin/js/actions.js',
+            'admin/js/urlify.js',
+            'admin/js/prepopulate.js',
+            'admin/js/vendor/select2/select2.full.min.js',
+            'admin/js/vendor/select2/i18n/pt-BR.js'
+        )
+    
 # Formulário personalizado para DiagnosticoNeurodivergente
     
 class DiagnosticoNeurodivergenteForms(forms.ModelForm):
@@ -306,11 +368,23 @@ class NeurodivergenciaAdmin(admin.ModelAdmin):
 
 @admin.register(MetaHabilidade)
 class MetaHabilidadeAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'descricao', 'ativo']
-    list_filter = ['ativo']
+    list_display = ['nome', 'descricao']
+    list_filter = []
     search_fields = ['nome', 'descricao']
     ordering = ['nome']
+    exclude = ['ativo']
     change_list_template = 'admin/metashabilidades/metahabilidade/change_list_material_dashboard.html'
+    change_form_template = 'admin/metashabilidades/metahabilidade/change_form.html'
+    
+    fieldsets = [
+        ('Informações Gerais', {
+            'fields': ['nome', 'descricao']
+        }),
+    ]
+    
+    def save_model(self, request, obj, form, change):
+        obj.ativo = True
+        super().save_model(request, obj, form, change)
     
 class PDIMetaHabilidadeInline(admin.TabularInline):
     model = PDIMetaHabilidade
@@ -1175,5 +1249,7 @@ class AnamneseAdmin(admin.ModelAdmin):
 #        }),
 #        ('Detalhes do Plano', {
 #            'fields': ('objetivos', 'estrategias', 'recursos')
+#        }),
+#    )       'fields': ('objetivos', 'estrategias', 'recursos')
 #        }),
 #    )

@@ -1,0 +1,514 @@
+{% extends "admin/change_form_standard.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}{{ block.super }}
+<!-- Select2 JS -->
+<script src="{% static 'admin/js/select2_initializer.js' %}"></script>
+<!-- jQuery Mask Plugin para formatação de campos -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/form_fields_style.css' %}">
+<style>
+  .card-body {
+    padding: 1.5rem 2rem;
+  }
+  .fieldset-container {
+    background-color: #fff;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+  }
+  .fieldset-container:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  .fieldset-container h5 {
+    font-weight: 600;
+    color: #344767;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .form-row {
+    margin-bottom: 1.25rem;
+  }
+  .form-row label {
+    font-weight: 500;
+    color: #344767;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .form-control, select, textarea, input[type="text"], input[type="password"], input[type="datetime"], input[type="datetime-local"], input[type="date"], input[type="month"], input[type="time"], input[type="week"], input[type="number"], input[type="email"], input[type="url"], input[type="search"], input[type="tel"], input[type="color"] {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #d2d6da;
+    appearance: none;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+  }
+  .form-control:focus {
+    border-color: #e91e63;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(233, 30, 99, 0.25);
+  }
+  .btn-primary {
+    color: #fff;
+    background-color: #e91e63;
+    border-color: #e91e63;
+    box-shadow: 0 3px 3px 0 rgba(233, 30, 99, 0.15), 0 3px 1px -2px rgba(233, 30, 99, 0.2), 0 1px 5px 0 rgba(233, 30, 99, 0.15);
+  }
+  .btn-primary:hover {
+    color: #fff;
+    background-color: #d81b60;
+    border-color: #c2185b;
+    box-shadow: 0 14px 26px -12px rgba(233, 30, 99, 0.4), 0 4px 23px 0 rgba(0, 0, 0, 0.12), 0 8px 10px -5px rgba(233, 30, 99, 0.2);
+  }
+  .submit-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #dee2e6;
+  }
+  .submit-row button, .submit-row a {
+    min-width: 120px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    padding: 0.625rem 1.5rem;
+    font-size: 0.75rem;
+    border-radius: 0.5rem;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .submit-row button:hover, .submit-row a:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 26px -12px rgba(233, 30, 99, 0.4), 0 4px 23px 0 rgba(0, 0, 0, 0.12), 0 8px 10px -5px rgba(233, 30, 99, 0.2);
+  }
+  .btn-outline-primary {
+    color: #e91e63;
+    border-color: #e91e63;
+  }
+  .btn-outline-primary:hover {
+    color: #fff;
+    background-color: #e91e63;
+    border-color: #e91e63;
+  }
+  .help-text {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+  }
+  .required label:after {
+    content: " *";
+    color: #f44335;
+  }
+  /* Estilo para o campo de imagem */
+  .file-upload {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+  .file-upload .file-upload-input {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 2.5rem;
+    margin: 0;
+    opacity: 0;
+  }
+  .file-upload .file-upload-label {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1;
+    height: 2.5rem;
+    padding: 0.5rem 1rem;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    border: 1px solid #d2d6da;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+  .file-upload:hover .file-upload-label {
+    border-color: #e91e63;
+  }
+  .file-upload-text {
+    margin-left: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Estilos para o avatar */
+  .avatar {
+    width: 36px;
+    height: 36px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .avatar-sm {
+    width: 24px;
+    height: 24px;
+  }
+  .avatar-xl {
+    width: 210px !important;
+    height: 210px !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    margin: 0 auto;
+  }
+  .photo-preview-container {
+    position: relative;
+    width: 210px !important;
+    height: 210px !important;
+    margin: 0 auto 0.5rem;
+  }
+  .avatar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  #photo-preview {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  #photo-preview:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+  #photo-preview:hover .avatar-overlay {
+    opacity: 1;
+  }
+  .avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .bg-gradient-primary {
+    background-image: linear-gradient(195deg, #ec407a 0%, #d81b60 100%);
+  }
+  .rounded-circle {
+    border-radius: 50% !important;
+  }
+  
+  /* Melhorias para dispositivos móveis */
+  @media (max-width: 768px) {
+    .submit-row {
+      flex-direction: column;
+    }
+    .submit-row button, .submit-row a {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block navbar_buttons %}{{ block.super }}{% endblock %}
+
+{% block field_sets %}
+  {% for fieldset in adminform %}
+    <div class="fieldset-container mb-4">
+      <h5 class="text-dark mb-3">
+        {% if fieldset.name %}{{ fieldset.name }}{% else %}Informações Gerais{% endif %}
+      </h5>
+      {% if fieldset.description %}
+        <div class="description mb-3 text-secondary">{{ fieldset.description|safe }}</div>
+      {% endif %}
+      
+      {% if fieldset.name == 'Dados Pessoais' %}
+        <!-- Layout especial para Dados Pessoais -->
+        <div class="row mb-3">
+          <!-- Coluna da foto -->
+          <div class="col-md-3 text-center">
+            <div class="w-100">
+              {% for line in fieldset %}
+                {% for field in line %}
+                  {% if field.field.name == 'foto_perfil' %}
+                    <!-- Usando label para associar o avatar ao campo de upload -->
+                    <label for="id_foto_perfil" class="d-block" style="cursor: pointer;">
+                      <div class="photo-preview-container mx-auto mb-3">
+                        <div class="avatar avatar-xl bg-gradient-primary rounded-circle" id="photo-preview" title="Clique para selecionar uma foto" style="width: 210px !important; height: 210px !important; display: flex; align-items: center; justify-content: center;">
+                          {% if original.foto_perfil %}
+                            <img src="{{ original.foto_perfil.url }}" alt="Foto de perfil" class="avatar-img rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                          {% else %}
+                            <i class="material-symbols-rounded text-white" style="font-size: 110px;">person</i>
+                          {% endif %}
+                          <div class="avatar-overlay">
+                            <i class="material-symbols-rounded text-white">photo_camera</i>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="text-center mb-2">
+                        <small class="text-muted d-block">Clique para selecionar uma foto</small>
+                      </div>
+                    </label>
+                    
+                    <!-- Campo original estilizado para ser invisível mas funcional -->
+                    <div style="position: absolute; opacity: 0; width: 0; height: 0; overflow: hidden;">
+                      {{ field.field }}
+                      {% if field.errors %}
+                        <div class="alert alert-danger text-white mt-2 p-2">
+                          {{ field.errors }}
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+            </div>
+          </div>
+          
+          <!-- Coluna dos campos de texto -->
+          <div class="col-md-9">
+            <div class="row">
+              {% for line in fieldset %}
+                {% for field in line %}
+                  {% if field.field.name != 'foto_perfil' and field.field.name != 'foto_preview' %}
+                    <div class="col-md-6 mb-3">
+                      <div class="form-group{% if field.field.required %} required{% endif %}">
+                        {{ field.label_tag }}
+                        {{ field.field }}
+                        
+                        {% if field.field.help_text %}
+                          <div class="help-text">{{ field.field.help_text|safe }}</div>
+                        {% endif %}
+                        
+                        {% if field.errors %}
+                          <div class="alert alert-danger text-white mt-2 p-2">
+                            {{ field.errors }}
+                          </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      {% elif fieldset.name == 'Endereço' or fieldset.name == 'Qualificação Profissional' or fieldset.name == 'Outros' %}
+        <!-- Layout especial para Endereço, Qualificação Profissional e Outros em duas colunas -->
+        <div class="row">
+          {% for line in fieldset %}
+            {% for field in line %}
+              {% if field.field.name != 'foto_preview' %}
+                {% if field.field.name == 'biografia' or field.field.name == 'formacao' %}
+                  <div class="col-md-12 mb-3">
+                {% else %}
+                  <div class="col-md-6 mb-3">
+                {% endif %}
+                  <div class="form-group{% if field.field.required %} required{% endif %}">
+                    {{ field.label_tag }}
+                    {{ field.field }}
+                    
+                    {% if field.field.help_text %}
+                      <div class="help-text">{{ field.field.help_text|safe }}</div>
+                    {% endif %}
+                    
+                    {% if field.errors %}
+                      <div class="alert alert-danger text-white mt-2 p-2">
+                        {{ field.errors }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endif %}
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <!-- Layout padrão para outros fieldsets -->
+        {% for line in fieldset %}
+          <div class="row mb-3">
+            {% for field in line %}
+              {% if field.field.name != 'foto_preview' %}
+                {% if line.fields|length == 1 %}
+                  <div class="col-md-12">
+                {% else %}
+                  <div class="col-md-6">
+                {% endif %}
+                  <div class="form-group{% if field.field.required %} required{% endif %}">
+                    {{ field.label_tag }}
+                    {{ field.field }}
+                    
+                    {% if field.field.help_text %}
+                      <div class="help-text">{{ field.field.help_text|safe }}</div>
+                    {% endif %}
+                    
+                    {% if field.errors %}
+                      <div class="alert alert-danger text-white mt-2 p-2">
+                        {{ field.errors }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  {% endfor %}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+  <div class="submit-row d-flex justify-content-between mt-4">
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary mb-0" name="_save">
+        <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">save</i> {% translate 'Salvar' %}
+      </button>
+      
+      {% if show_save_and_continue %}
+        <button type="submit" class="btn btn-outline-dark mb-0" name="_continue">
+          <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">edit</i>
+          {% translate 'Salvar e continuar editando' %}
+        </button>
+      {% endif %}
+      
+      {% if show_save_and_add_another %}
+        <button type="submit" class="btn btn-outline-dark mb-0" name="_addanother">
+          <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">add</i> {% translate 'Salvar e adicionar outro' %}
+        </button>
+      {% endif %}
+    </div>
+    
+    <div>
+      {% if show_delete_link and original %}
+        <a href="{% url opts|admin_urlname:'delete' original.pk|admin_urlquote %}" class="btn btn-outline-danger mb-0">
+          <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">delete</i> {% translate 'Excluir' %}
+        </a>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block admin_change_form_document_ready %}
+{{ block.super }}
+<script>
+  (function($) {
+    $(document).ready(function() {
+      // Melhora a aparência dos campos de formulário
+      $('.form-control, select, textarea, input[type="text"], input[type="password"], input[type="datetime"], input[type="datetime-local"], input[type="date"], input[type="month"], input[type="time"], input[type="week"], input[type="number"], input[type="email"], input[type="url"], input[type="search"], input[type="tel"], input[type="color"]').addClass('form-control');
+      
+      // Quando o campo original é alterado, mostra a prévia da imagem
+      $('input[name="foto_perfil"]').on('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+          // Mostra a prévia da imagem imediatamente
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var previewContainer = $('#photo-preview');
+            
+            // Remove o ícone de pessoa, se existir
+            previewContainer.find('.material-symbols-rounded:not(:contains("photo_camera"))').remove();
+            
+            // Verifica se já existe uma imagem de prévia
+            if (previewContainer.find('img').length > 0) {
+              // Atualiza a imagem existente
+              previewContainer.find('img').attr('src', e.target.result);
+            } else {
+              // Cria uma nova imagem
+              var img = $('<img class="avatar-img rounded-circle" style="width: 100%; height: 100%; object-fit: cover;" alt="Prévia da foto">');
+              img.attr('src', e.target.result);
+              previewContainer.prepend(img);
+            }
+            
+            console.log('Prévia da imagem atualizada com sucesso');
+          };
+          reader.readAsDataURL(file);
+          
+          console.log('Arquivo selecionado diretamente no campo original:', file.name);
+        } catch (err) {
+          console.error('Erro ao processar arquivo:', err);
+        }
+      });
+      
+      // Garantir que o formulário tenha o atributo enctype="multipart/form-data"
+      $('form').attr('enctype', 'multipart/form-data');
+      
+      // Verificar se o formulário tem o enctype correto e mostrar um aviso se não tiver
+      if ($('form').attr('enctype') !== 'multipart/form-data') {
+        console.error('ATENÇÃO: O formulário não tem o atributo enctype="multipart/form-data". O upload de imagem pode não funcionar.');
+      } else {
+        console.log('Formulário configurado corretamente com enctype="multipart/form-data"');
+      }
+      
+      // Verificar se o campo de foto existe
+      if ($('input[name="foto_perfil"]').length > 0) {
+        console.log('Campo de foto encontrado corretamente');
+      } else {
+        console.error('ATENÇÃO: Campo de foto não encontrado. Verifique se o nome do campo está correto.');
+      }
+      
+      // Adiciona efeito de hover visual para indicar que o avatar é clicável
+      $('#photo-preview').hover(
+        function() {
+          $(this).css('transform', 'translateY(-3px)');
+          $(this).css('box-shadow', '0 8px 20px rgba(0, 0, 0, 0.2)');
+        },
+        function() {
+          $(this).css('transform', 'translateY(0)');
+          $(this).css('box-shadow', '0 5px 15px rgba(0, 0, 0, 0.1)');
+        }
+      );
+      
+      // Adiciona efeito de hover aos fieldsets
+      $('.fieldset-container').hover(
+        function() {
+          $(this).addClass('shadow-sm');
+        },
+        function() {
+          $(this).removeClass('shadow-sm');
+        }
+      );
+      
+      // Destaca campos obrigatórios
+      $('.required label').append('<span class="text-danger">*</span>');
+      
+      // Adiciona feedback visual ao enviar o formulário
+      $('form').on('submit', function() {
+        $('.submit-row button[type="submit"]').each(function() {
+          $(this).prop('disabled', true);
+          $(this).prepend('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>');
+        });
+      });
+
+      // Oculta botões de ação nos campos relacionados
+      $('.field-user .related-widget-wrapper-link').css('display', 'none');
+    });
+  })(django.jQuery);
+</script>
+{% endblock %}

@@ -1,6 +1,23 @@
 {% extends "admin/change_form_standard.html" %}
 {% load i18n admin_urls static admin_modify %}
 
+{% block navbar_buttons %}{{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:index' %}">{% translate 'Início' %}</a></li>
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a></li>
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a></li>
+    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">
+      {% if add %}{% blocktranslate with name=opts.verbose_name %}Adicionar {{ name }}{% endblocktranslate %}
+      {% else %}{{ original|truncatewords:"18" }}
+      {% endif %}
+    </li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block extrajs %}
 {{ block.super }}
 <script>
@@ -10,6 +27,30 @@ document.addEventListener('DOMContentLoaded', function() {
   relatedButtons.forEach(button => {
     button.style.display = 'none';
   });
+  
+  // Modificar o título da página e o breadcrumb
+  if (!document.querySelector('body.add-form')) {
+    const titleElement = document.querySelector('.card-header .shadow-dark h6');
+    const breadcrumbLastItem = document.querySelector('.breadcrumb-item.active');
+    
+    if (titleElement || breadcrumbLastItem) {
+      const codigoValue = document.querySelector('input[name="codigo"]')?.value || '';
+      const descricaoValue = document.querySelector('textarea[name="descricao"]')?.value || '';
+      
+      // Formatar o título como "Código BNCC - [Código]"
+      const displayText = codigoValue ? 'Código BNCC - ' + codigoValue : 'Código BNCC';
+      
+      // Atualizar o título do cabeçalho
+      if (titleElement) {
+        titleElement.textContent = displayText;
+      }
+      
+      // Atualizar o último item do breadcrumb
+      if (breadcrumbLastItem) {
+        breadcrumbLastItem.textContent = displayText;
+      }
+    }
+  }
 });
 </script>
 {% endblock %}

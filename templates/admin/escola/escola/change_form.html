@@ -1,0 +1,1207 @@
+{% extends "admin/change_form_standard.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrastyle %}{{ block.super }}
+<style>
+  /* Estilos para os seletores personalizados de profissionais */
+  .profissionais-selector {
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  /* Estilos específicos para a página de Escola */
+  
+  /* Corrigir alinhamento dos labels */
+  .form-group label {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #344767;
+  }
+  
+  /* Estilos para os campos Select2 */
+  .select2-container--default .select2-selection--single,
+  .select2-container--default .select2-selection--multiple {
+    border: 1px solid #d2d6da !important;
+    border-radius: 0.5rem !important;
+    min-height: 38px !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+  
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 36px;
+    padding-left: 0.5rem;
+  }
+  
+  /* Remover seta para baixo */
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    display: none !important;
+  }
+  
+  /* Remover botão X para limpar */
+  .select2-container--default .select2-selection--single .select2-selection__clear {
+    display: none !important;
+  }
+  
+  /* Estilos específicos para os campos de profissionais */
+  .campos-profissionais-originais {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .campos-profissionais-originais label {
+    font-weight: 600;
+    color: #344767;
+    margin-bottom: 0.5rem;
+  }
+  
+  .campos-profissionais-originais .select2-container {
+    max-height: 300px;
+    overflow-y: auto;
+    width: 100% !important;
+  }
+  
+  .campos-profissionais-originais .select2-selection--multiple {
+    border: 1px solid #d2d6da !important;
+    border-radius: 0.5rem !important;
+    min-height: 38px !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+  
+  .campos-profissionais-originais .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #e91e63 !important;
+    box-shadow: 0 0 0 0.2rem rgba(233, 30, 99, 0.25) !important;
+  }
+  
+  .campos-profissionais-originais .select2-selection__choice {
+    background-color: #e9ecef !important;
+    border-color: #dee2e6 !important;
+    border-radius: 0.375rem !important;
+    padding: 0.25rem 0.5rem !important;
+    margin: 0.25rem !important;
+  }
+  
+  /* Otimizações de desempenho */
+  .select2-results__option {
+    contain: content;
+  }
+  
+  .select2-container--open .select2-dropdown {
+    will-change: transform;
+  }
+  
+  /* Ocultar botões de ação nos campos relacionados */
+  .field-modalidades .related-widget-wrapper-link,
+  .field-programas_educacionais .related-widget-wrapper-link,
+  .field-recursos_disponiveis .related-widget-wrapper-link,
+  .field-profissionais_educacao,
+  .field-profissionais_educacao .related-widget-wrapper-link,
+  .field-profissionais_saude .related-widget-wrapper-link,
+  .field-modalidades .related-lookup,
+  .field-programas_educacionais .related-lookup,
+  .field-recursos_disponiveis .related-lookup,
+  .field-profissionais_educacao .related-lookup,
+  .field-profissionais_saude .related-lookup {
+    display: none !important;
+  }
+  
+  /* Estilo para campos de entrada formatados */
+  .formatted-input {
+    position: relative;
+  }
+  
+  /* Estilo para campos obrigatórios */
+  .required label:after {
+    content: " *";
+    color: #f44335;
+  }
+  
+  /* Estilos para os seletores de profissionais */
+  .select2-dropdown-large {
+    min-width: 300px !important;
+  }
+  
+  .select2-container--default .select2-selection--multiple {
+    border-radius: 0.5rem !important;
+    border-color: #d2d6da !important;
+  }
+  
+  .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #e91e63 !important;
+    box-shadow: 0 0 0 0.2rem rgba(233, 30, 99, 0.25) !important;
+  }
+  
+  .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #f8f9fa !important;
+    border-color: #e9ecef !important;
+    border-radius: 0.5rem !important;
+    padding: 5px 10px !important;
+    margin-top: 5px !important;
+    margin-right: 5px !important;
+  }
+  
+  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #e91e63 !important;
+    margin-right: 5px !important;
+  }
+  
+  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #d81557 !important;
+    background-color: transparent !important;
+  }
+  
+
+  
+  /* Estilo para o dropdown do Select2 */
+  .select2-dropdown {
+    border-radius: 0.5rem !important;
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.14);
+    border-color: #e9ecef !important;
+  }
+  
+  .select2-search__field {
+    border-radius: 0.5rem !important;
+    padding: 8px 12px !important;
+    border-color: #d2d6da !important;
+  }
+  
+  .select2-search__field:focus {
+    border-color: #e91e63 !important;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(233, 30, 99, 0.25) !important;
+  }
+  
+  /* Ajuste para o campo de Equipe Multiprofissional */
+  /* Campo antigo de Profissionais da Educação e Saúde ocultados completamente */
+  .field-profissionais_educacao,
+  .field-profissionais_saude {
+    display: none !important;
+    margin-bottom: 1.5rem !important;
+  }
+  
+  /* Ajuste para o fieldset */
+  .fieldset-container {
+    background-color: #f8f9fa;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+  }
+  
+  .fieldset-container:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Título do fieldset */
+  .fieldset-container h5 {
+    font-weight: 600;
+    color: #344767;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  /* Botões de ação */
+  .btn.btn-outline-primary {
+    color: #e91e63 !important;
+    border-color: #e91e63 !important;
+    background-color: transparent !important;
+  }
+  
+  .btn.btn-outline-primary:hover,
+  .btn.btn-outline-primary:focus,
+  .btn.btn-outline-primary:active {
+    color: #d81557 !important;
+    border-color: #d81557 !important;
+    background-color: transparent !important;
+    box-shadow: 0 3px 5px -1px rgba(233, 30, 99, 0.15) !important;
+  }
+  
+  /* Ajustes para textarea */
+  textarea.form-control {
+    width: 100%;
+    min-height: 100px;
+  }
+  
+  /* Campos que devem ocupar linha inteira */
+  .field-observacoes .col-md-6,
+  .field-descricao .col-md-6 {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+</style>
+{% endblock %}
+
+{% block extrahead %}{{ block.super }}
+<!-- Carregar os arquivos CSS e JavaScript para o seletor de profissionais -->
+<link rel="stylesheet" type="text/css" href="{% static 'css/escola_dashboard.css' %}?v={% now 'U' %}">
+<!-- Carregar o Font Awesome para os ícones do seletor -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<!-- Garantir que o jQuery e Select2 estejam carregados corretamente -->
+<script>
+  // Verificar se o jQuery já está disponível
+  if (typeof jQuery === 'undefined') {
+    document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"><\/script>');
+  }
+  
+  // Verificar se o Select2 já está disponível
+  if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"><\/script>');
+  }
+  
+  // Verificar se o jQuery Mask já está disponível
+  if (typeof jQuery !== 'undefined' && typeof jQuery.fn.mask === 'undefined') {
+    document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"><\/script>');
+  }
+  
+  // Inicializar o Select2 explicitamente quando o documento estiver pronto
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof django !== 'undefined' && django.jQuery && django.jQuery.fn.select2) {
+      console.log('Inicializando Select2 explicitamente...');
+      
+      // Configurar o Select2 para todos os selects
+      django.jQuery('select').each(function() {
+        var $select = django.jQuery(this);
+        
+        // Verificar se já foi inicializado
+        if (!$select.hasClass('select2-hidden-accessible')) {
+          $select.select2({
+            width: '100%',
+            placeholder: $select.attr('multiple') ? 'Selecione as opções' : 'Selecione uma opção',
+            allowClear: false,
+            minimumResultsForSearch: 0,
+            language: {
+              noResults: function() {
+                return "Nenhum resultado encontrado";
+              },
+              searching: function() {
+                return "Buscando...";
+              }
+            }
+          });
+        }
+      });
+    }
+  });
+</script>
+
+<!-- Scripts específicos para a página de Escola -->
+<script src="{% static 'js/escola_profissionais_selector.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'js/escola_dashboard_init.js' %}?v={% now 'U' %}"></script>
+<script src="{% static 'js/escola_profissionais_direto.js' %}?v={% now 'U' %}"></script>
+
+<!-- Estilos inline para os seletores de profissionais -->
+<style>
+  /* Estilos para o seletor personalizado */
+  .profissionais-selector {
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Verificar se a função mask está disponível
+    if (typeof django.jQuery.fn.mask !== 'undefined') {
+      console.log('jQuery Mask está disponível, aplicando máscaras...');
+      
+      // Formatar campos de telefone e CEP com formatação automática
+      django.jQuery('input[name="telefone"]').mask('(00) 00000-0000', {
+        clearIfNotMatch: true,
+        onKeyPress: function(phone, e, field, options) {
+          // Remove todos os caracteres não numéricos
+          const digits = phone.replace(/\D/g, '');
+          
+          // Aplica a máscara correta independentemente de como o usuário digita
+          if (digits.length > 0) {
+            field.mask('(00) 00000-0000', options);
+          }
+        }
+      });
+      
+      django.jQuery('input[name="cep"]').mask('00000-000');
+      django.jQuery('input[name="codigo_inep"]').mask('00000000');
+    } else {
+      console.warn('jQuery Mask não está disponível, pulando formatação de campos');
+    }
+    
+    // Adicionar texto de instrução abaixo do campo telefone
+    django.jQuery('input[name="telefone"]').parent().append('<div class="help-text">Digite apenas os números, a formatação será aplicada automaticamente.</div>');
+    
+    // Ocultar botões de ação nos campos relacionados
+    // Ocultar apenas os botões de ação relacionados, mas não os campos de profissionais
+    django.jQuery('.field-modalidades .related-widget-wrapper-link, .field-programas_educacionais .related-widget-wrapper-link, .field-recursos_disponiveis .related-widget-wrapper-link').hide();
+    // Manter os campos de profissionais visíveis
+    django.jQuery('.field-profissionais_educacao, .field-profissionais_saude').addClass('campos-profissionais-originais').show();
+    
+    // Configuração avançada para os campos de Equipe Multiprofissional
+    // Verificar se o select2 está disponível antes de usá-lo
+    if (typeof django.jQuery.fn.select2 !== 'undefined') {
+      console.log('Select2 está disponível, aplicando aos campos de profissionais...');
+      
+      django.jQuery('select[name="profissionais_educacao"], select[name="profissionais_saude"]').each(function() {
+        var $select = django.jQuery(this);
+        
+        // Aplicar Select2 com configurações avançadas seguindo o padrão do sistema
+        $select.select2({
+          width: '100%',
+          placeholder: 'Pesquise e selecione os profissionais',
+          allowClear: false,
+          closeOnSelect: false,
+          minimumResultsForSearch: 0,
+          dropdownCssClass: 'select2-dropdown-large',
+          language: {
+            noResults: function() {
+              return "Nenhum profissional encontrado";
+            },
+            searching: function() {
+              return "Buscando...";
+            }
+          }
+        });
+        
+        // Otimizar o desempenho do Select2
+        $select.on('select2:opening select2:closing', function() {
+          // Usar contain: content para melhorar o desempenho de renderização
+          django.jQuery('.select2-results__options').css('contain', 'content');
+        });
+        
+        // Reduzir o número de eventos disparados durante a seleção
+        $select.on('select2:selecting select2:unselecting', function(e) {
+          // Usar debounce para evitar múltiplas atualizações
+          if ($select.data('selectingTimeout')) {
+            clearTimeout($select.data('selectingTimeout'));
+          }
+          
+          $select.data('selectingTimeout', setTimeout(function() {
+            console.log('Processando seleção com otimização de desempenho');
+          }, 100));
+        });
+        
+        // Adicionar instrução abaixo do campo
+        $select.parent().append('<div class="help-text">Pesquise e selecione os profissionais da equipe multiprofissional.</div>');
+        
+        // Adicionar classe para facilitar a seleção e estilização
+        $select.closest('.form-group').addClass('equipe-multiprofissional campos-profissionais-originais');
+      });
+    } else {
+      console.warn('Select2 não está disponível, usando selects nativos para os campos de profissionais');
+    }
+    
+    // Não ocultar os campos originais de Profissionais da Educação e Saúde para garantir que funcionem corretamente
+    // Adicionar classe para estilização
+    django.jQuery('.field-profissionais_educacao, .field-profissionais_saude').addClass('campos-profissionais-originais');
+    
+    // Função para garantir que os campos de profissionais permaneçam visíveis
+    function garantirVisibilidadeCamposProfissionais() {
+      console.log('Garantindo que os campos de profissionais permaneçam visíveis');
+      
+      // Remover qualquer estilo inline que possa estar ocultando os campos
+      var $camposProfissionais = django.jQuery('.field-profissionais_educacao, .field-profissionais_saude');
+      $camposProfissionais
+        .show()
+        .css('display', 'block !important')
+        .attr('style', function(i, style) {
+          return style && style.replace(/display[^;]+;?/g, '');
+        })
+        .addClass('campos-profissionais-originais');
+      
+      // Garantir que os selects estejam habilitados e visíveis
+      django.jQuery('select[name="profissionais_educacao"], select[name="profissionais_saude"]')
+        .prop('disabled', false)
+        .closest('.form-group')
+        .addClass('equipe-multiprofissional campos-profissionais-originais')
+        .show()
+        .css('display', 'block !important');
+      
+      // Verificar se os campos estão realmente visíveis
+      if ($camposProfissionais.is(':hidden')) {
+        console.warn('Os campos de profissionais ainda estão ocultos! Aplicando solução mais agressiva...');
+        // Adicionar CSS inline diretamente nos elementos
+        $camposProfissionais.attr('style', 'display: block !important; visibility: visible !important;');
+        // Adicionar CSS global para forçar a visibilidade
+        var css = '.field-profissionais_educacao, .field-profissionais_saude { display: block !important; visibility: visible !important; }'
+        var style = document.createElement('style');
+        style.type = 'text/css';
+        style.appendChild(document.createTextNode(css));
+        document.head.appendChild(style);
+      }
+    }
+    
+    // Executar imediatamente
+    garantirVisibilidadeCamposProfissionais();
+    
+    // Configurar um monitoramento contínuo para garantir que os campos permaneçam visíveis
+    var monitoramentoVisibilidade = setInterval(function() {
+      garantirVisibilidadeCamposProfissionais();
+    }, 500); // Verificar a cada meio segundo
+    
+    // Parar o monitoramento após 30 segundos para evitar sobrecarga
+    setTimeout(function() {
+      clearInterval(monitoramentoVisibilidade);
+      console.log('Monitoramento de visibilidade encerrado após 30 segundos');
+    }, 30000);
+    
+    // Executar novamente após o carregamento completo da página
+    django.jQuery(window).on('load', function() {
+      garantirVisibilidadeCamposProfissionais();
+      // Executar mais uma vez após alguns segundos para garantir que scripts assíncronos não ocultem os campos
+      setTimeout(garantirVisibilidadeCamposProfissionais, 1000);
+      setTimeout(garantirVisibilidadeCamposProfissionais, 2000);
+      setTimeout(garantirVisibilidadeCamposProfissionais, 5000);
+    });
+    
+    // Otimizar o desempenho dos selects originais
+    django.jQuery('select[name="profissionais_educacao"], select[name="profissionais_saude"]').each(function() {
+      var $select = django.jQuery(this);
+      
+      // Reduzir o número de eventos disparados durante a seleção
+      $select.on('select2:selecting select2:unselecting', function(e) {
+        // Usar debounce para evitar múltiplas atualizações
+        if ($select.data('selectingTimeout')) {
+          clearTimeout($select.data('selectingTimeout'));
+        }
+        
+        $select.data('selectingTimeout', setTimeout(function() {
+          console.log('Processando seleção com otimização de desempenho');
+        }, 100));
+      });
+    });
+    
+    // Configuração padrão para outros campos de seleção múltipla
+    // Verificar se o select2 está disponível antes de usá-lo
+    if (typeof django.jQuery.fn.select2 !== 'undefined') {
+      django.jQuery('select[multiple]:not([name="profissionais_educacao"]):not([name="profissionais_saude"])').select2({
+      width: '100%',
+      placeholder: 'Selecione as opções',
+      allowClear: false,
+      language: {
+        noResults: function() {
+          return "Nenhum resultado encontrado";
+        },
+        searching: function() {
+          return "Buscando...";
+        }
+      }
+    });
+    }
+    
+
+    
+    // Configuração do Select2 para os campos de seleção única
+    // Verificar se o select2 está disponível antes de usá-lo
+    if (typeof django.jQuery.fn.select2 !== 'undefined') {
+      django.jQuery('select:not([multiple])').select2({
+      width: '100%',
+      placeholder: 'Selecione uma opção',
+      allowClear: false,
+      minimumResultsForSearch: 0,
+      language: {
+        noResults: function() {
+          return "Nenhum resultado encontrado";
+        },
+        searching: function() {
+          return "Buscando...";
+        }
+      }
+    });
+    }
+    // Solução simples para os seletores de profissionais
+    console.log('Iniciando solução simples para os seletores de profissionais...');
+    
+    // Função para inicializar os seletores de profissionais
+    function inicializarSeletoresProfissionais() {
+      // Garantir que o jQuery esteja disponível como $
+      var $ = django.jQuery;
+      
+      console.log('Inicializando seletores de profissionais...');
+      console.log('Verificando elementos do DOM...');
+      
+      // Verificar se os elementos existem
+      if ($('#lista-educacao').length === 0) {
+        console.error('Elemento #lista-educacao não encontrado!');
+      } else {
+        console.log('Elemento #lista-educacao encontrado com sucesso');
+      }
+      
+      if ($('#lista-saude').length === 0) {
+        console.error('Elemento #lista-saude não encontrado!');
+      } else {
+        console.log('Elemento #lista-saude encontrado com sucesso');
+      }
+      
+      // Verificar se estamos no novo formato de Equipe Multiprofissional
+      var temNovoFormato = $('fieldset:contains("Equipe Multiprofissional")').length > 0;
+      console.log('Página usa novo formato de Equipe Multiprofissional:', temNovoFormato);
+      
+      // Verificar se o select2 está disponível
+      var select2Disponivel = typeof $.fn.select2 !== 'undefined';
+      console.log('Select2 está disponível:', select2Disponivel);
+      
+      // Estratégia específica para o novo formato
+      var $selectEducacao, $selectSaude;
+      
+      if (temNovoFormato) {
+        console.log('Usando estratégia para o novo formato...');
+        // No novo formato, buscar todos os selects dentro do fieldset
+        var $fieldset = $('fieldset:contains("Equipe Multiprofissional")');
+        var $selects = $fieldset.find('select');
+        console.log('Selects encontrados no fieldset:', $selects.length);
+        
+        // Se temos exatamente 2 selects, assumir que o primeiro é educação e o segundo é saúde
+        if ($selects.length >= 2) {
+          $selectEducacao = $($selects[0]);
+          $selectSaude = $($selects[1]);
+          console.log('Selects identificados por posição no fieldset');
+        } else {
+          // Tentar identificar por atributos
+          $selects.each(function() {
+            var $select = $(this);
+            var id = $select.attr('id') || '';
+            var name = $select.attr('name') || '';
+            
+            console.log('Analisando select:', id, name);
+            
+            if (id.toLowerCase().indexOf('educacao') > -1 || name.toLowerCase().indexOf('educacao') > -1) {
+              $selectEducacao = $select;
+              console.log('Select de educação identificado por nome/id:', id);
+            } else if (id.toLowerCase().indexOf('saude') > -1 || name.toLowerCase().indexOf('saude') > -1) {
+              $selectSaude = $select;
+              console.log('Select de saúde identificado por nome/id:', id);
+            }
+          });
+        }
+      } else {
+        // Formato antigo - usar os seletores tradicionais
+        $selectEducacao = $('select[name="profissionais_educacao"], select[name*="profissionais_educacao"], select[id*="profissionais_educacao"], .field-profissionais_educacao select');
+        $selectSaude = $('select[name="profissionais_saude"], select[name*="profissionais_saude"], select[id*="profissionais_saude"], .field-profissionais_saude select');
+      }
+      
+      // Debug detalhado dos selects
+      console.log('Select educação encontrado:', $selectEducacao ? $selectEducacao.length : 0);
+      console.log('Select saúde encontrado:', $selectSaude ? $selectSaude.length : 0);
+      
+      // Verificar se os selects foram encontrados
+      if (!$selectEducacao || $selectEducacao.length === 0) {
+        console.error('Select de educação não encontrado!');
+      } else {
+        console.log('Opções no select de educação:', $selectEducacao.find('option').length);
+        $selectEducacao.find('option').each(function(i) {
+          console.log('Opção ' + i + ':', $(this).val(), $(this).text(), 'Selecionado:', $(this).prop('selected'));
+        });
+      }
+      
+      if (!$selectSaude || $selectSaude.length === 0) {
+        console.error('Select de saúde não encontrado!');
+      } else {
+        console.log('Opções no select de saúde:', $selectSaude.find('option').length);
+        $selectSaude.find('option').each(function(i) {
+          console.log('Opção ' + i + ':', $(this).val(), $(this).text(), 'Selecionado:', $(this).prop('selected'));
+        });
+      }
+      
+      // Última tentativa para encontrar os selects se não foram encontrados
+      if (!$selectEducacao || $selectEducacao.length === 0 || !$selectSaude || $selectSaude.length === 0) {
+        console.error('Alguns selects não foram encontrados, tentando métodos alternativos...');
+        
+        // Tentar buscar por ID ou nome
+        if (!$selectEducacao || $selectEducacao.length === 0) {
+          $selectEducacao = $('#id_profissionais_educacao, [id$="-profissionais_educacao"], [id*="profissionais_educacao"]');
+          console.log('Tentativa alternativa por ID - Select educação:', $selectEducacao.length);
+        }
+        
+        if (!$selectSaude || $selectSaude.length === 0) {
+          $selectSaude = $('#id_profissionais_saude, [id$="-profissionais_saude"], [id*="profissionais_saude"]');
+          console.log('Tentativa alternativa por ID - Select saúde:', $selectSaude.length);
+        }
+        
+        // Buscar qualquer select na página
+        if (!$selectEducacao || $selectEducacao.length === 0) {
+          console.log('Buscando qualquer select que possa ser de educação...');
+          $('select').each(function() {
+            var $select = $(this);
+            var id = $select.attr('id') || '';
+            var name = $select.attr('name') || '';
+            
+            if (id.toLowerCase().indexOf('educacao') > -1 || name.toLowerCase().indexOf('educacao') > -1) {
+              $selectEducacao = $select;
+              console.log('Select de educação encontrado por busca geral:', id, name);
+              return false; // break
+            }
+          });
+        }
+        
+        if (!$selectSaude || $selectSaude.length === 0) {
+          console.log('Buscando qualquer select que possa ser de saúde...');
+          $('select').each(function() {
+            var $select = $(this);
+            var id = $select.attr('id') || '';
+            var name = $select.attr('name') || '';
+            
+            if (id.toLowerCase().indexOf('saude') > -1 || name.toLowerCase().indexOf('saude') > -1) {
+              $selectSaude = $select;
+              console.log('Select de saúde encontrado por busca geral:', id, name);
+              return false; // break
+            }
+          });
+        }
+        
+        // Se ainda não encontrou, tentar pegar os primeiros selects do fieldset
+        if ((!$selectEducacao || $selectEducacao.length === 0 || !$selectSaude || $selectSaude.length === 0) && temNovoFormato) {
+          var $fieldset = $('fieldset:contains("Equipe Multiprofissional")');
+          var $selects = $fieldset.find('select');
+          
+          if ($selects.length >= 2) {
+            if (!$selectEducacao || $selectEducacao.length === 0) {
+              $selectEducacao = $($selects[0]);
+              console.log('Select de educação assumido como primeiro select do fieldset');
+            }
+            
+            if (!$selectSaude || $selectSaude.length === 0) {
+              $selectSaude = $($selects[1]);
+              console.log('Select de saúde assumido como segundo select do fieldset');
+            }
+          }
+        }
+        
+        // Verificar se encontrou os selects
+        if (!$selectEducacao || $selectEducacao.length === 0 || !$selectSaude || $selectSaude.length === 0) {
+          console.error('Não foi possível encontrar os selects de profissionais!');
+          return false;
+        }
+      }
+      
+      console.log('Selects encontrados, populando seletores...');
+      
+      // Garantir que os selects tenham o estilo Select2 correto
+      try {
+        if ($selectEducacao && $selectEducacao.length > 0) {
+          $selectEducacao.select2({
+            width: '100%',
+            placeholder: 'Pesquise e selecione os profissionais',
+            allowClear: false,
+            closeOnSelect: false,
+            minimumResultsForSearch: 0,
+            language: {
+              noResults: function() { return "Nenhum resultado encontrado"; },
+              searching: function() { return "Buscando..."; }
+            }
+          });
+          console.log('Select2 aplicado ao select de educação');
+        }
+        
+        if ($selectSaude && $selectSaude.length > 0) {
+          $selectSaude.select2({
+            width: '100%',
+            placeholder: 'Pesquise e selecione os profissionais',
+            allowClear: false,
+            closeOnSelect: false,
+            minimumResultsForSearch: 0,
+            language: {
+              noResults: function() { return "Nenhum resultado encontrado"; },
+              searching: function() { return "Buscando..."; }
+            }
+          });
+          console.log('Select2 aplicado ao select de saúde');
+        }
+      } catch (e) {
+        console.error('Erro ao aplicar Select2:', e);
+      }
+      
+      // Preencher o seletor de educação
+      var $listaEducacao = $('#lista-educacao');
+      console.log('Lista educação encontrada:', $listaEducacao.length);
+      $listaEducacao.empty();
+      
+      // Adicionar as opções de educação
+      var temOpcoesEducacao = false;
+      var contadorEducacao = 0;
+      
+      if ($selectEducacao && $selectEducacao.length > 0) {
+        console.log('Processando opções do select de educação...');
+        $selectEducacao.find('option').each(function() {
+          var valor = $(this).val();
+          var texto = $(this).text();
+          var selecionado = $(this).prop('selected');
+          
+          console.log('Processando opção:', valor, texto, selecionado);
+          
+          if (valor) {
+            temOpcoesEducacao = true;
+            contadorEducacao++;
+            var $item = $('<div class="profissional-item' + (selecionado ? ' selecionado selected' : '') + '" data-id="' + valor + '">' +
+              '<input type="checkbox" ' + (selecionado ? 'checked' : '') + '>' +
+              '<span class="profissional-nome">' + texto + '</span>' +
+              '</div>');
+            
+            $listaEducacao.append($item);
+          }
+        });
+      } else {
+        console.error('Não foi possível processar as opções de educação: select não encontrado');
+      }
+      
+      console.log('Profissionais de educação adicionados:', contadorEducacao);
+      
+      if (!temOpcoesEducacao) {
+        $listaEducacao.html('<div class="text-center text-muted py-3">Nenhum profissional de educação disponível</div>');
+      }
+      
+      // Preencher o seletor de saúde
+      var $listaSaude = $('#lista-saude');
+      console.log('Lista saúde encontrada:', $listaSaude.length);
+      $listaSaude.empty();
+      
+      // Adicionar as opções de saúde
+      var temOpcoesSaude = false;
+      var contadorSaude = 0;
+      
+      if ($selectSaude && $selectSaude.length > 0) {
+        console.log('Processando opções do select de saúde...');
+        $selectSaude.find('option').each(function() {
+          var valor = $(this).val();
+          var texto = $(this).text();
+          var selecionado = $(this).prop('selected');
+          
+          console.log('Processando opção de saúde:', valor, texto, selecionado);
+          
+          if (valor) {
+            temOpcoesSaude = true;
+            contadorSaude++;
+            var $item = $('<div class="profissional-item' + (selecionado ? ' selecionado selected' : '') + '" data-id="' + valor + '">' +
+              '<input type="checkbox" ' + (selecionado ? 'checked' : '') + '>' +
+              '<span class="profissional-nome">' + texto + '</span>' +
+              '</div>');
+            
+            $listaSaude.append($item);
+          }
+        });
+      } else {
+        console.error('Não foi possível processar as opções de saúde: select não encontrado');
+      }
+      
+      console.log('Profissionais de saúde adicionados:', contadorSaude);
+      
+      if (!temOpcoesSaude) {
+        $listaSaude.html('<div class="text-center text-muted py-3">Nenhum profissional de saúde disponível</div>');
+      }
+      
+      // Garantir que os selects tenham o estilo Select2 correto
+      try {
+        // Aplicar Select2 aos selects de profissionais
+        $selectEducacao.select2({
+          width: '100%',
+          placeholder: 'Pesquise e selecione os profissionais',
+          allowClear: false,
+          closeOnSelect: false,
+          minimumResultsForSearch: 0,
+          language: {
+            noResults: function() { return "Nenhum resultado encontrado"; },
+            searching: function() { return "Buscando..."; }
+          }
+        });
+        
+        $selectSaude.select2({
+          width: '100%',
+          placeholder: 'Pesquise e selecione os profissionais',
+          allowClear: false,
+          closeOnSelect: false,
+          minimumResultsForSearch: 0,
+          language: {
+            noResults: function() { return "Nenhum resultado encontrado"; },
+            searching: function() { return "Buscando..."; }
+          }
+        });
+        
+        console.log('Select2 aplicado aos selects de profissionais');
+      } catch (e) {
+        console.error('Erro ao aplicar Select2:', e);
+      }
+      
+      // Adicionar eventos
+      // Variável para armazenar o timeout da busca (debounce)
+      var timeoutBuscaEducacao;
+      
+      // Evento de busca para educação com debounce
+      $('#busca-educacao').off('input').on('input', function() {
+        var $input = $(this);
+        var $lista = $('#lista-educacao');
+        
+        // Limpar timeout anterior
+        clearTimeout(timeoutBuscaEducacao);
+        
+        // Adicionar indicador de busca
+        if ($lista.find('.searching').length === 0 && $input.val().length > 0) {
+          $lista.append('<div class="searching text-center text-muted py-2"><i class="material-icons spinning">search</i> Buscando...</div>');
+        }
+        
+        // Definir novo timeout (debounce de 300ms)
+        timeoutBuscaEducacao = setTimeout(function() {
+          var termo = $input.val().toLowerCase();
+          var encontrados = 0;
+          
+          // Remover indicador de busca
+          $lista.find('.searching').remove();
+          
+          $lista.find('.profissional-item').each(function() {
+            var texto = $(this).find('.profissional-nome').text().toLowerCase();
+            var match = texto.indexOf(termo) > -1;
+            $(this).toggle(match);
+            if (match) encontrados++;
+          });
+          
+          // Mostrar mensagem se nenhum resultado for encontrado
+          if (encontrados === 0 && termo.length > 0) {
+            if ($lista.find('.no-results').length === 0) {
+              $lista.append('<div class="no-results text-center text-muted py-3">Nenhum profissional encontrado</div>');
+            }
+          } else {
+            $lista.find('.no-results').remove();
+          }
+        }, 300);
+      });
+      
+      // Variável para armazenar o timeout da busca (debounce)
+      var timeoutBuscaSaude;
+      
+      // Evento de busca para saúde com debounce
+      $('#busca-saude').off('input').on('input', function() {
+        var $input = $(this);
+        var $lista = $('#lista-saude');
+        
+        // Limpar timeout anterior
+        clearTimeout(timeoutBuscaSaude);
+        
+        // Adicionar indicador de busca
+        if ($lista.find('.searching').length === 0 && $input.val().length > 0) {
+          $lista.append('<div class="searching text-center text-muted py-2"><i class="material-icons spinning">search</i> Buscando...</div>');
+        }
+        
+        // Definir novo timeout (debounce de 300ms)
+        timeoutBuscaSaude = setTimeout(function() {
+          var termo = $input.val().toLowerCase();
+          var encontrados = 0;
+          
+          // Remover indicador de busca
+          $lista.find('.searching').remove();
+          
+          $lista.find('.profissional-item').each(function() {
+            var texto = $(this).find('.profissional-nome').text().toLowerCase();
+            var match = texto.indexOf(termo) > -1;
+            $(this).toggle(match);
+            if (match) encontrados++;
+          });
+          
+          // Mostrar mensagem se nenhum resultado for encontrado
+          if (encontrados === 0 && termo.length > 0) {
+            if ($lista.find('.no-results').length === 0) {
+              $lista.append('<div class="no-results text-center text-muted py-3">Nenhum profissional encontrado</div>');
+            }
+          } else {
+            $lista.find('.no-results').remove();
+          }
+        }, 300);
+      });
+      
+      // Evento de clique para os itens de educação
+      $('#lista-educacao').off('click', '.profissional-item').on('click', '.profissional-item', function() {
+        var $item = $(this);
+        var id = $item.data('id');
+        var $checkbox = $item.find('input[type="checkbox"]');
+        var selecionado = !$checkbox.prop('checked');
+        
+        $checkbox.prop('checked', selecionado);
+        $item.toggleClass('selecionado', selecionado);
+        $item.toggleClass('selected', selecionado);
+        $selectEducacao.find('option[value="' + id + '"]').prop('selected', selecionado);
+        $selectEducacao.trigger('change');
+        
+        // Feedback visual
+        if (selecionado) {
+          $item.append('<span class="feedback-icon position-absolute" style="right: 10px; color: #4CAF50;"><i class="material-icons">Selecionado</i></span>');
+          setTimeout(function() {
+            $item.find('.feedback-icon').fadeOut(300, function() { $(this).remove(); });
+          }, 1000);
+        }
+      });
+      
+      // Evento de clique para os itens de saúde
+      $('#lista-saude').off('click', '.profissional-item').on('click', '.profissional-item', function() {
+        var $item = $(this);
+        var id = $item.data('id');
+        var $checkbox = $item.find('input[type="checkbox"]');
+        var selecionado = !$checkbox.prop('checked');
+        
+        $checkbox.prop('checked', selecionado);
+        $item.toggleClass('selecionado', selecionado);
+        $item.toggleClass('selected', selecionado);
+        $selectSaude.find('option[value="' + id + '"]').prop('selected', selecionado);
+        $selectSaude.trigger('change');
+        
+        // Feedback visual
+        if (selecionado) {
+          $item.append('<span class="feedback-icon position-absolute" style="right: 10px; color: #4CAF50;"><i class="material-icons">Selecionado</i></span>');
+          setTimeout(function() {
+            $item.find('.feedback-icon').fadeOut(300, function() { $(this).remove(); });
+          }, 1000);
+        }
+      });
+      
+      console.log('Seletores inicializados com sucesso!');
+      return true;
+    }
+    
+    // Função para verificar se os seletores estão funcionando
+    function verificarSeletores() {
+      var $ = django.jQuery;
+      var $listaEducacao = $('#lista-educacao');
+      var $listaSaude = $('#lista-saude');
+      
+      console.log('Verificando seletores - Lista educação:', $listaEducacao.length, 'itens:', $listaEducacao.find('.profissional-item').length);
+      console.log('Verificando seletores - Lista saúde:', $listaSaude.length, 'itens:', $listaSaude.find('.profissional-item').length);
+      
+      if ($listaEducacao.find('.profissional-item').length === 0 && 
+          $listaSaude.find('.profissional-item').length === 0) {
+        console.log('Nenhum profissional encontrado, tentando novamente...');
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // Inicializar os seletores quando o DOM estiver pronto
+    django.jQuery(document).ready(function() {
+      console.log('DOM pronto, inicializando seletores...');
+      
+      // Verificar se estamos na página de edição com o novo campo Equipe Multiprofissional
+      var temNovoFormato = django.jQuery('.equipe-multiprofissional').length > 0 || 
+                          django.jQuery('fieldset:contains("Equipe Multiprofissional")').length > 0;
+      console.log('Página usa novo formato de Equipe Multiprofissional:', temNovoFormato);
+      
+      // Se for o novo formato, tentar inicializar os seletores com um pequeno atraso
+      // para garantir que todos os elementos estejam carregados
+      if (temNovoFormato) {
+        setTimeout(function() {
+          console.log('Inicializando seletores para o novo formato...');
+          inicializarSeletoresProfissionais();
+        }, 500);
+      } else {
+        // Formato antigo, inicializar normalmente
+        inicializarSeletoresProfissionais();
+      }
+      
+      // Tentar novamente após um curto período para garantir que os selects foram carregados
+      setTimeout(function() {
+        console.log('Tentando inicializar novamente após delay...');
+        if (!verificarSeletores()) {
+          inicializarSeletoresProfissionais();
+        }
+      }, 1500);
+      
+      // Tentar uma última vez após um tempo maior
+      setTimeout(function() {
+        if (!verificarSeletores()) {
+          console.log('Última tentativa de inicialização...');
+          inicializarSeletoresProfissionais();
+        }
+      }, 3000);
+    });
+    
+    // Garantir que a inicialização ocorra mesmo se o DOM já estiver pronto
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      console.log('Documento já carregado, inicializando imediatamente...');
+      setTimeout(inicializarSeletoresProfissionais, 100);
+    }
+    
+    // Adicionar dica visual para os campos de profissionais
+    django.jQuery('.equipe-multiprofissional').closest('.fieldset-container').find('h5').append(
+      '<span class="badge bg-gradient-primary ms-2" style="font-size: 0.7rem; vertical-align: middle;">Novo!</span>'
+    );
+  });
+</script>
+{% endblock %}
+
+{% block form_top %}
+<div class="alert alert-info text-white mb-4">
+  <div class="d-flex align-items-center">
+    <i class="material-symbols-rounded me-2">info</i>
+    <div>
+      <strong>Dica:</strong> Preencha todos os campos obrigatórios marcados com <span class="text-danger">*</span>. O código INEP deve conter exatamente 8 dígitos numéricos.
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:index' %}">{% translate 'Início' %}</a></li>
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a></li>
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a></li>
+    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">
+      {% if add %}{% blocktranslate with name=opts.verbose_name %}Adicionar {{ name }}{% endblocktranslate %}
+      {% else %}{{ original|truncatewords:"18" }}
+      {% endif %}
+    </li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block field_sets %}
+  {% for fieldset in adminform %}
+    <div class="fieldset-container mb-4">
+      <h5 class="text-dark mb-3">
+        {% if fieldset.name %}{{ fieldset.name }}{% else %}Informações Gerais{% endif %}
+      </h5>
+      {% if fieldset.description %}
+        <div class="description">{{ fieldset.description|safe }}</div>
+      {% endif %}
+      
+      <!-- Adicionar seletores personalizados para Equipe Multiprofissional -->
+      {% if fieldset.name == 'Equipe Multiprofissional' %}
+      <div class="row profissionais-container mb-4">
+        <div class="col-md-6 mb-3">
+          <div class="profissionais-selector" id="seletor-educacao">
+            <h5 class="mb-3">Profissionais da Educação</h5>
+            <div class="search-container mb-3 position-relative">
+              <input type="text" class="form-control border ps-3" id="busca-educacao" placeholder="Buscar profissionais de educação...">
+              <span class="position-absolute" style="right: 10px; top: 50%; transform: translateY(-50%);">
+                <i class="material-icons text-secondary">search</i>
+              </span>
+            </div>
+            <div class="profissionais-lista" id="lista-educacao" style="max-height: 250px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 0.5rem; padding: 10px; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+              <p class="text-center text-muted py-3">Carregando profissionais da educação...</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 mb-3">
+          <div class="profissionais-selector" id="seletor-saude">
+            <h5 class="mb-3">Profissionais da Saúde</h5>
+            <div class="search-container mb-3 position-relative">
+              <input type="text" class="form-control border ps-3" id="busca-saude" placeholder="Buscar profissionais de saúde...">
+              <span class="position-absolute" style="right: 10px; top: 50%; transform: translateY(-50%);">
+                <i class="material-icons text-secondary">search</i>
+              </span>
+            </div>
+            <div class="profissionais-lista" id="lista-saude" style="max-height: 250px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 0.5rem; padding: 10px; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+              <p class="text-center text-muted py-3">Carregando profissionais da saúde...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <style>
+        .profissional-item {
+          padding: 8px 12px;
+          margin-bottom: 5px;
+          border-bottom: 1px solid #eee;
+          cursor: pointer;
+          border-radius: 0.5rem;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          position: relative;
+        }
+        
+        .profissional-item:hover {
+          background-color: #f8f9fa;
+        }
+        
+        .profissional-item.selecionado,
+        .profissional-item.selected {
+          background-color: #e9ecef;
+        }
+        
+        .profissional-item input[type="checkbox"] {
+          margin-right: 10px;
+        }
+        
+        .profissional-item span {
+          font-weight: 500;
+          color: #344767;
+        }
+        
+        .profissionais-lista::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .profissionais-lista::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+        
+        .profissionais-lista::-webkit-scrollbar-thumb {
+          background: #e91e63;
+          border-radius: 3px;
+        }
+        
+        .profissionais-lista::-webkit-scrollbar-thumb:hover {
+          background: #d81557;
+        }
+        
+        /* Estilo para o ícone de busca girando */
+        .spinning {
+          animation: spin 1.5s linear infinite;
+          display: inline-block;
+          font-size: 18px;
+          vertical-align: middle;
+          margin-right: 5px;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      </style>
+      {% endif %}
+      
+      <div class="row">
+        {% for line in fieldset %}
+          {% for field in line %}
+            <div class="{% if field.field.name == 'id' %}d-none{% else %}col-md-6 mb-3{% endif %} {% if field.field.name in 'observacoes,descricao' %}field-{{ field.field.name }}{% endif %} {% if field.field.name %}field-{{ field.field.name }}{% endif %}">
+              <div class="form-group{% if field.field.required %} required{% endif %}">
+                {% if field.is_checkbox %}
+                  <div class="form-check">
+                    {{ field.field }}
+                    <label class="form-check-label" for="{{ field.field.id_for_label }}">
+                      {{ field.field.label }}
+                    </label>
+                  </div>
+                {% else %}
+                  <div class="input-group input-group-outline">
+                    {% if field.field.errors %}
+                      <div class="text-danger">
+                        {{ field.field.errors }}
+                      </div>
+                    {% endif %}
+                    
+                    {{ field.field.label_tag }}
+                    {{ field.field }}
+                    
+                    {% if field.field.help_text %}
+                      <div class="help-text">
+                        {{ field.field.help_text|safe }}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+{% endblock %}

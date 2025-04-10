@@ -110,6 +110,21 @@
 
 {% block navbar_buttons %}{{ block.super }}{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:index' %}">{% translate 'Início' %}</a></li>
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a></li>
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a></li>
+    <li class="breadcrumb-item text-sm text-dark active" aria-current="page">
+      {% if add %}{% blocktranslate with name=opts.verbose_name %}Adicionar {{ name }}{% endblocktranslate %}
+      {% else %}{{ original|truncatewords:"18" }}
+      {% endif %}
+    </li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block field_sets %}
   {% for fieldset in adminform %}
     <div class="fieldset-container mb-4">
@@ -285,15 +300,24 @@
     hideRelatedButtons();
     setTimeout(hideRelatedButtons, 500);
     
-    // Modificar o título da página
+    // Modificar o título da página e o breadcrumb
     if (!document.querySelector('body.add-form')) {
       const titleElement = document.querySelector('.card-header .shadow-dark h6');
-      if (titleElement) {
+      const breadcrumbLastItem = document.querySelector('.breadcrumb-item.active');
+      
+      if (titleElement || breadcrumbLastItem) {
         // Obter o nome do neurodivergente
         const neurodivergenteName = document.querySelector('#id_neurodivergente').selectedOptions[0].text;
         if (neurodivergenteName) {
-          // Formatar o título como "PEI - João Silva" (sem a data)
-          titleElement.textContent = 'PEI - ' + neurodivergenteName;
+          // Atualizar o título do cabeçalho
+          if (titleElement) {
+            titleElement.textContent = 'PEI - ' + neurodivergenteName;
+          }
+          
+          // Atualizar o último item do breadcrumb
+          if (breadcrumbLastItem) {
+            breadcrumbLastItem.textContent = 'PEI - ' + neurodivergenteName;
+          }
         }
       }
     }

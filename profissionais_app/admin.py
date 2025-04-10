@@ -50,6 +50,7 @@ class ProfissionalInline(admin.StackedInline):
         js = (
             'admin/js/jquery.mask.min.js',
             'admin/js/profissionais_admin.js',
+            'admin/js/cep_autocomplete.js',
         )
 
 @admin.register(Profissional)
@@ -114,4 +115,5 @@ class ProfissionalAdmin(admin.ModelAdmin):
         js = (
             'admin/js/jquery.mask.min.js',
             'admin/js/profissionais_admin.js',
+            'admin/js/cep_autocomplete.js',
         )

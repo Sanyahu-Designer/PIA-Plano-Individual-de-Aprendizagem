@@ -102,7 +102,6 @@
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">CID-10</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Nome da Condição</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Categoria</th>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Status</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Ações</th>
                       </tr>
                     </thead>
@@ -120,10 +119,7 @@
                             <p class="text-xs font-weight-bold mb-0">{{ obj.nome }}</p>
                           </td>
                           <td>
-                            <p class="text-xs font-weight-bold mb-0">{{ obj.categoria }}</p>
-                          </td>
-                          <td class="align-middle text-center">
-                            <span class="badge badge-sm {% if obj.ativo %}bg-gradient-success{% else %}bg-gradient-secondary{% endif %}">{% if obj.ativo %}Ativo{% else %}Inativo{% endif %}</span>
+                            <p class="text-xs font-weight-bold mb-0">{{ obj.categoria.get_nome_real }}</p>
                           </td>
                           <td class="align-middle text-center">
                             <div class="ms-auto">

@@ -70,11 +70,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Inicializa select2 para campos de seleção
-    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.select2 !== 'undefined') {
-        jQuery('#id_profissao').select2({
-            theme: 'admin-select2',
-            width: '100%'
+    // Nota: A inicialização do Select2 para o campo profissão agora é feita pelo script global
+    // select2_initializer.js para garantir a padronização visual em todo o sistema
+    
+    // Inicializa máscaras para campos formatados
+    if (typeof jQuery !== 'undefined') {
+        jQuery(function($) {
+            // Máscara para celular
+            $('#id_celular').mask('(00) 00000-0000', {
+                onKeyPress: function(phone, e, field, options) {
+                    const masks = ['(00) 00000-0000'];
+                    const mask = masks[0];
+                    $('#id_celular').mask(mask, options);
+                }
+            });
+        });
+    }
+    
+    // Formatação automática do celular (fallback caso jQuery Mask não esteja disponível)
+    const celularInput = document.querySelector('#id_celular');
+    if (celularInput) {
+        celularInput.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length === 11) {
+                this.value = `(${value.substr(0,2)}) ${value.substr(2,5)}-${value.substr(7)}`;
+            }
         });
     }
 });

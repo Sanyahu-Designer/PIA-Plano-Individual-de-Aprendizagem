@@ -26,6 +26,46 @@
     padding: 6px 12px;
 }
 
+/* Ocultar botões de ação nos campos relacionados */
+.field-profissao .related-widget-wrapper-link,
+.field-profissao .related-lookup {
+    display: none !important;
+}
+
+/* Garantir que o Select2 no campo específico tenha o estilo correto */
+.field-profissao .select2-container {
+    width: 100% !important;
+}
+
+.field-profissao .select2-selection {
+    border: 1px solid #d2d6da !important;
+    border-radius: 0.5rem !important;
+    min-height: 38px !important;
+    padding: 0.25rem 0.5rem !important;
+}
+
+/* Estilo do texto renderizado */
+.field-profissao .select2-selection__rendered {
+    line-height: 36px !important;
+    padding: 0.375rem 0.5rem !important;
+}
+
+/* Cores neutras para os itens do dropdown */
+.select2-container--default .select2-results__option {
+    background-color: #f8f9fa !important;
+    color: #495057 !important;
+}
+
+.select2-container--default .select2-results__option:hover {
+    background-color: #e9ecef !important;
+    color: #495057 !important;
+}
+
+.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #e9ecef !important;
+    color: #344767 !important;
+}
+
 /* Estilização das abas */
 .tab-dados-pessoais,
 .tab-qualificacao,

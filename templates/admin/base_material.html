@@ -90,11 +90,13 @@
       <ul class="navbar-nav">
         <!-- Menu principal -->
         <li class="nav-item">
-          <a class="nav-link {% if request.path == '/dashboard/' or request.path == '/admin/' %}active bg-gradient-dark text-white{% else %}text-dark{% endif %}" href="/dashboard/">
-            <i class="material-symbols-rounded opacity-5">dashboard</i>
-            <span class="nav-link-text ms-1">Dashboard</span>
+          <a class="nav-link {% if request.path == '/dashboard/' or request.path == '/dashboard/gerente/' %}active bg-gradient-primary text-white{% else %}text-dark{% endif %}" href="/dashboard/">
+            <i class="material-symbols-rounded opacity-10">dashboard</i>
+            <span class="nav-link-text ms-1 fw-bold">Dashboard</span>
           </a>
         </li>
+        
+
         
         <!-- ALUNO/PACIENTE -->
         <li class="nav-item mt-3">

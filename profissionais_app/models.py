@@ -72,7 +72,8 @@ class Profissional(models.Model):
                 regex=r'^\(\d{2}\) \d{5}-\d{4}$',
                 message='Formato inválido. Use (XX) XXXXX-XXXX'
             )
-        ]
+        ],
+        help_text='Digite apenas os números. A formatação será aplicada automaticamente.'
     )
     data_nascimento = models.DateField('Data de Nascimento')
     genero = models.CharField('Gênero', max_length=1, choices=GENDER_CHOICES)

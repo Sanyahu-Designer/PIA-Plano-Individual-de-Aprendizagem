@@ -23,27 +23,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Inicializa máscaras para campos formatados
-    if (typeof jQuery !== 'undefined') {
-        jQuery(function($) {
-            // Máscara para celular
-            $('#id_celular').mask('(00) 00000-0000', {
-                onKeyPress: function(phone, e, field, options) {
-                    const masks = ['(00) 00000-0000'];
-                    const mask = masks[0];
-                    $('#id_celular').mask(mask, options);
+    // Verifica se jQuery está disponível e carrega as máscaras com segurança
+    function initializeMasks() {
+        if (typeof jQuery !== 'undefined' && typeof jQuery.fn.mask !== 'undefined') {
+            jQuery(function($) {
+                // Máscara para celular
+                if ($('#id_celular').length) {
+                    $('#id_celular').mask('(00) 00000-0000', {
+                        onKeyPress: function(phone, e, field, options) {
+                            const masks = ['(00) 00000-0000'];
+                            const mask = masks[0];
+                            $('#id_celular').mask(mask, options);
+                        }
+                    });
                 }
-            });
-            
-            // Máscara para CEP
-            $('#id_cep').mask('00000-000');
+                
+                // Máscara para CEP
+                if ($('#id_cep').length) {
+                    $('#id_cep').mask('00000-000');
+                }
 
-            // Máscaras adicionais
-            $('[data-mask]').each(function() {
-                $(this).mask($(this).attr('data-mask'));
+                // Máscaras adicionais
+                $('[data-mask]').each(function() {
+                    $(this).mask($(this).attr('data-mask'));
+                });
             });
-        });
+        }
     }
+    
+    // Tenta inicializar as máscaras imediatamente
+    initializeMasks();
+    
+    // Tenta novamente após um pequeno atraso para garantir que jQuery.mask esteja carregado
+    setTimeout(initializeMasks, 500);
 
     // CEP auto-complete com tratamento de erro
     const cepInput = document.querySelector('#id_cep');

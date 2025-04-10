@@ -13,6 +13,9 @@ class CategoriaNeurodivergente(models.Model):
         ordering = ['ordem', 'nome']
 
     def __str__(self):
+        return "Categorias CID-10"
+        
+    def get_nome_real(self):
         return self.nome
 
 class CondicaoNeurodivergente(models.Model):
@@ -34,7 +37,7 @@ class CondicaoNeurodivergente(models.Model):
         unique_together = ['categoria', 'nome']
 
     def __str__(self):
-        return f"{self.categoria.nome}: {self.nome} (CID-10: {self.cid_10})"
+        return f"{self.nome} - CID-10: {self.cid_10}"
 
 class Neurodivergencia(models.Model):
     neurodivergente = models.OneToOneField(

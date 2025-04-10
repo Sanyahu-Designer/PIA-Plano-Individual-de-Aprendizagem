@@ -1,0 +1,224 @@
+{% extends "admin/change_form_standard.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/form_fields_style.css' %}">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/permission_cards.css' %}">
+<!-- Carregando o script com defer para garantir que ele execute após o carregamento da página -->
+<script src="{% static 'admin/js/permission_cards.js' %}" defer></script>
+
+<!-- Estilo inline para ocultar o widget original imediatamente -->
+<style>
+  /* Ocultar apenas os elementos originais do widget de permissões */
+  .field-permissions > .selector,
+  .field-permissions > .selector-available,
+  .field-permissions > .selector-chosen,
+  .field-permissions > .selector-chooser,
+  .field-permissions > h2,
+  .field-permissions > p.help,
+  .field-permissions > .related-widget-wrapper,
+  /* Ocultar especificamente o título e a mensagem de ajuda */
+  .field-permissions > label,
+  .field-permissions > .help,
+  /* Ocultar qualquer texto dentro do fieldset que não esteja dentro dos cards */
+  .field-permissions > p:not(.permissions-cards-container *),
+  .field-permissions > div > p:not(.permissions-cards-container *),
+  /* Seletor mais específico para o título */
+  label[for="id_permissions"],
+  /* Seletor mais específico para a mensagem de ajuda */
+  #id_permissions + p,
+  #id_permissions + .help {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+  
+  /* Garantir que os cards e seu conteúdo sejam exibidos corretamente */
+  .permissions-cards-container,
+  .permissions-cards-container *,
+  .permission-card,
+  .permission-card *,
+  .card-header,
+  .card-body,
+  .permission-item,
+  .form-check,
+  .form-check-label {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+  }
+  
+  /* Ajustes específicos para elementos dentro dos cards */
+  .permissions-cards-container h6,
+  .permissions-cards-container p,
+  .permissions-cards-container label,
+  .permission-card .text-sm,
+  .permission-card .form-check-label {
+    display: block !important;
+    visibility: visible !important;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:index' %}">Início</a></li>
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a></li>
+    {% if has_view_permission %}
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a></li>
+    {% else %}
+    <li class="breadcrumb-item text-sm"><span class="opacity-5 text-dark">{{ opts.verbose_name_plural|capfirst }}</span></li>
+    {% endif %}
+    <li class="breadcrumb-item text-sm active" aria-current="page">
+      {% if add %}Adicionar {{ opts.verbose_name }}
+      {% else %}{{ original|truncatewords:18 }}
+      {% endif %}
+    </li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block field_sets %}
+{% for fieldset in adminform %}
+<div class="fieldset-container mb-4">
+  <h5 class="text-dark mb-3 fieldset-title">
+    {% if fieldset.name %}{{ fieldset.name }}{% else %}Informações do Grupo{% endif %}
+  </h5>
+  {% if fieldset.description %}
+  <div class="description">{{ fieldset.description|safe }}</div>
+  {% endif %}
+  <div class="row">
+    {% for line in fieldset %}
+      {% for field in line %}
+        <div class="{% if field.field.name == 'name' %}col-md-12{% else %}col-md-12{% endif %} mb-3">
+          <div class="form-row {% if field.field.name == 'permissions' %}permissions-field-container{% endif %}">
+            <div class="field-box{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}">
+              {% if field.is_checkbox %}
+                {{ field.field }}
+                {{ field.label_tag }}
+              {% else %}
+                {{ field.label_tag }}
+                {{ field.field }}
+              {% endif %}
+              {% if field.field.help_text %}
+                <div class="help text-muted small mt-1">{{ field.field.help_text|safe }}</div>
+              {% endif %}
+              {% if not field.is_readonly and field.errors %}
+                <div class="text-danger small mt-1">{{ field.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM carregado, iniciando personalização da página de Grupo');
+    
+    // Traduzir textos para português
+    document.title = document.title.replace('Change group', 'Editar grupo').replace('Add group', 'Adicionar grupo');
+    
+    const pageHeader = document.querySelector('h1');
+    if (pageHeader) {
+      pageHeader.textContent = pageHeader.textContent.replace('Change group', 'Editar grupo').replace('Add group', 'Adicionar grupo');
+    }
+    
+    // Traduzir botões de ação
+    const saveButton = document.querySelector('input[name="_save"]');
+    if (saveButton) {
+      saveButton.value = 'Salvar';
+      // Adicionar ícone ao botão de salvar
+      const saveIcon = document.createElement('span');
+      saveIcon.className = 'material-symbols-rounded me-1';
+      saveIcon.style.fontSize = '20px';
+      saveIcon.textContent = 'save';
+      saveButton.parentNode.insertBefore(saveIcon, saveButton);
+    }
+    
+    const saveContinueButton = document.querySelector('input[name="_continue"]');
+    if (saveContinueButton) {
+      saveContinueButton.value = 'Salvar e continuar editando';
+      // Adicionar ícone ao botão de salvar e continuar
+      const saveContinueIcon = document.createElement('span');
+      saveContinueIcon.className = 'material-symbols-rounded me-1';
+      saveContinueIcon.style.fontSize = '20px';
+      saveContinueIcon.textContent = 'edit';
+      saveContinueButton.parentNode.insertBefore(saveContinueIcon, saveContinueButton);
+    }
+    
+    const saveAddButton = document.querySelector('input[name="_addanother"]');
+    if (saveAddButton) {
+      saveAddButton.value = 'Salvar e adicionar outro';
+      // Adicionar ícone ao botão de salvar e adicionar outro
+      const saveAddIcon = document.createElement('span');
+      saveAddIcon.className = 'material-symbols-rounded me-1';
+      saveAddIcon.style.fontSize = '20px';
+      saveAddIcon.textContent = 'add';
+      saveAddButton.parentNode.insertBefore(saveAddIcon, saveAddButton);
+    }
+    
+    const deleteButton = document.querySelector('a.deletelink');
+    if (deleteButton) {
+      deleteButton.textContent = 'Excluir';
+      // Adicionar ícone ao botão de excluir
+      const deleteIcon = document.createElement('span');
+      deleteIcon.className = 'material-symbols-rounded';
+      deleteIcon.style.fontSize = '20px';
+      deleteIcon.textContent = 'delete';
+      deleteButton.insertBefore(deleteIcon, deleteButton.firstChild);
+    }
+    
+    // Traduzir labels de campos
+    const nameLabel = document.querySelector('label[for="id_name"]');
+    if (nameLabel) {
+      nameLabel.textContent = 'Nome:';
+    }
+    
+    const permissionsLabel = document.querySelector('label[for="id_permissions"]');
+    if (permissionsLabel) {
+      permissionsLabel.textContent = 'Permissões:';
+    }
+    
+    // Adicionar identificador para o container de permissões
+    const permissionsFieldset = document.querySelector('.field-permissions');
+    if (permissionsFieldset) {
+      permissionsFieldset.id = 'permissions-fieldset';
+      permissionsFieldset.classList.add('permissions-field-container');
+    }
+    
+    // Garantir que o selector widget tenha um ID para facilitar a localização
+    const selectorWidget = document.querySelector('.selector');
+    if (selectorWidget) {
+      selectorWidget.id = 'permissions-selector-widget';
+      // Ocultar o widget original
+      selectorWidget.style.display = 'none';
+    }
+    
+    // Ocultar todos os elementos relacionados ao widget original de permissões
+    document.querySelectorAll('.selector-available, .selector-chosen, .selector-chooser').forEach(el => {
+      el.style.display = 'none';
+    });
+    
+    // Adicionar uma classe ao body para aplicar estilos específicos
+    document.body.classList.add('group-change-form');
+  });
+</script>
+{% endblock %}

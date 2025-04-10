@@ -3,8 +3,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.template.response import TemplateResponse
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.models import User
-from .views import CustomLoginView
+from django.contrib.auth.models import User, Group
+from .views import CustomLoginView, dashboard_gerente, dashboard
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve
@@ -16,8 +16,13 @@ urlpatterns = [
     # URLs do realtime (devem vir antes do admin)
     path('dashboard/realtime/', include('realtime.urls', namespace='realtime')),
     
-    # URLs do admin
-    path('dashboard/', admin.site.urls),
+    # Dashboard do Gerente - Tem precedência sobre o admin.site.urls
+    path('dashboard/gerente/', dashboard_gerente, name='dashboard_gerente'),
+    path('dashboard/', admin.site.urls, name='dashboard'),  # Usar o admin site diretamente
+    
+    # O Django Admin já gerencia automaticamente as URLs para todos os modelos registrados
+    # Não é necessário incluir admin.site.urls múltiplas vezes
+    # A linha 'path('dashboard/', admin.site.urls, name='dashboard')' acima já inclui o admin site
     
     # URLs personalizadas para usar os templates do Material Dashboard 3
     path('dashboard/adaptacao_curricular/', staff_member_required(lambda request: TemplateResponse(request, 'admin/neurodivergentes/aci/change_list_material_dashboard.html', {'title': 'ACI', 'cl': {'opts': {'verbose_name_plural': 'Adaptações Curriculares Individualizadas', 'app_label': 'adaptacao_curricular', 'app_config': {'verbose_name': 'Adaptação Curricular'}}}})), name='aci_dashboard'),
@@ -59,6 +64,23 @@ urlpatterns = [
         'app_label': 'auth',
         'users': User.objects.all().order_by('first_name', 'last_name')
     })), name='usuarios_dashboard'),
+    
+    path('dashboard/auth/group/', staff_member_required(lambda request: TemplateResponse(request, 'admin/auth/group/change_list_material_dashboard.html', {
+        'title': 'Grupos',
+        'app_label': 'auth',
+        'cl': {
+            'result_list': Group.objects.all().order_by('name'),
+            'result_count': Group.objects.count(),
+            'full_result_count': Group.objects.count(),
+            'opts': {
+                'verbose_name': 'grupo',
+                'verbose_name_plural': 'Grupos',
+                'app_label': 'auth',
+                'app_config': {'verbose_name': 'Autenticação e Autorização'}
+            },
+            'query': request.GET.get('q', '')
+        }
+    })), name='grupos_dashboard'),
     
     # Outras URLs
     path('', CustomLoginView.as_view(

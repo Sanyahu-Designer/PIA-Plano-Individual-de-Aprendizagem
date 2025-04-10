@@ -81,18 +81,7 @@ class ProfissionalForm(forms.ModelForm):
         # Formata o CEP
         cep_formatado = f'{cep[:5]}-{cep[5:]}'
         
-        # Consulta o CEP na API
-        try:
-            response = requests.get(f'https://viacep.com.br/ws/{cep}/json/')
-            data = response.json()
-            
-            if not data.get('erro'):
-                # Atualiza os campos com os dados do CEP
-                self.cleaned_data['endereco'] = data.get('logradouro', '')
-                self.cleaned_data['bairro'] = data.get('bairro', '')
-                self.cleaned_data['cidade'] = data.get('localidade', '')
-                self.cleaned_data['estado'] = data.get('uf', '').upper()
-        except:
-            pass  # Silently fail if API is unavailable
+        # A consulta à API do ViaCEP agora é feita via JavaScript no frontend
+        # para evitar lentidão durante o salvamento
         
         return cep_formatado

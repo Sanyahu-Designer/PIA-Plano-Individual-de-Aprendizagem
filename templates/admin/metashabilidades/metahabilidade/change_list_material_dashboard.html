@@ -101,7 +101,6 @@
                       <tr>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Meta/Habilidade</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Descrição</th>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Status</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Ações</th>
                       </tr>
                     </thead>
@@ -117,9 +116,6 @@
                           </td>
                           <td>
                             <p class="text-xs font-weight-bold mb-0">{{ obj.descricao|truncatechars:100 }}</p>
-                          </td>
-                          <td class="align-middle text-center">
-                            <span class="badge badge-sm {% if obj.ativo %}bg-gradient-success{% else %}bg-gradient-secondary{% endif %}">{% if obj.ativo %}Ativo{% else %}Inativo{% endif %}</span>
                           </td>
                           <td class="align-middle text-center">
                             <div class="ms-auto">

@@ -21,9 +21,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize masks for formatted fields
     if (typeof jQuery !== 'undefined') {
         jQuery(function($) {
-            $('[data-mask]').each(function() {
-                $(this).mask($(this).attr('data-mask'));
-            });
+            // Verificar se a biblioteca jQuery Mask está disponível
+            if (typeof $.fn.mask === 'undefined') {
+                console.warn('jQuery Mask não está disponível. Carregando dinamicamente...');
+                
+                // Carregar jQuery Mask dinamicamente
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js';
+                script.onload = function() {
+                    console.log('jQuery Mask carregado com sucesso!');
+                    // Aplicar máscaras após carregar a biblioteca
+                    $('[data-mask]').each(function() {
+                        $(this).mask($(this).attr('data-mask'));
+                    });
+                };
+                document.head.appendChild(script);
+            } else {
+                // jQuery Mask já está disponível, aplicar máscaras normalmente
+                $('[data-mask]').each(function() {
+                    $(this).mask($(this).attr('data-mask'));
+                });
+            }
         });
     }
 

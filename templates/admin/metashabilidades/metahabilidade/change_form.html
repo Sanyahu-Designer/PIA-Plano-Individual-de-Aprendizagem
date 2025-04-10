@@ -22,11 +22,7 @@
     color: #344767;
     border-bottom: 1px solid #dee2e6;
     padding-bottom: 0.75rem;
-    padding-top: 0; /* Remove o padding superior */
-    margin-top: 0; /* Remove a margem superior */
     margin-bottom: 1.25rem;
-    text-transform: none; /* Garante que o texto não seja transformado em maiúsculas */
-    font-size: 1.25rem; /* Garante o tamanho adequado da fonte */
   }
   .form-row {
     margin-bottom: 1.25rem;
@@ -34,9 +30,12 @@
   .form-row label {
     font-weight: 500;
     color: #344767;
-    font-size: 0.875rem;
     margin-bottom: 0.5rem;
     display: block;
+  }
+  .required label:after {
+    content: " *";
+    color: #e91e63;
   }
 </style>
 {% endblock %}
@@ -46,7 +45,7 @@
   <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
     <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:index' %}">{% translate 'Início' %}</a></li>
     <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:app_list' app_label='neurodivergentes' %}">Neurodivergentes</a></li>
-    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:neurodivergentes_categorianeurodivergente_changelist' %}">Categorias CID-10</a></li>
+    <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'admin:neurodivergentes_metahabilidade_changelist' %}">Metas/Habilidades</a></li>
     <li class="breadcrumb-item text-sm text-dark active" aria-current="page">
       {% if add %}{% blocktranslate with name=opts.verbose_name %}Adicionar {{ name }}{% endblocktranslate %}
       {% else %}{{ original|truncatewords:"18" }}
@@ -86,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="row">
               {% for line in fieldset %}
                 {% for field in line %}
-                  <div class="{% if field.field.name == 'id' %}d-none{% else %}col-md-6 mb-3{% endif %}">
+                  <div class="{% if field.field.name == 'id' %}d-none{% elif field.field.name == 'descricao' %}col-md-12 mb-3{% else %}col-md-6 mb-3{% endif %}">
                     <div class="form-group{% if field.field.required %} required{% endif %}">
                       <label for="{{ field.field.id_for_label }}">{{ field.field.label }}</label>
                       {{ field.field }}
@@ -109,33 +108,4 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
   </div>
 </div>
-{% endblock %}
-
-{% block submit_buttons_bottom %}
-  <div class="submit-row d-flex justify-content-between mt-4">
-    <div class="d-flex gap-2">
-      {% if show_save %}
-        <button type="submit" class="btn btn-primary mb-0" name="_save">
-          <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">save</i> {% translate 'Salvar' %}
-        </button>
-      {% endif %}
-      {% if show_save_and_continue %}
-        <button type="submit" class="btn btn-outline-primary mb-0" name="_continue">
-          <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">save</i> {% translate 'Salvar e continuar editando' %}
-        </button>
-      {% endif %}
-      {% if show_save_and_add_another %}
-        <button type="submit" class="btn btn-outline-primary mb-0" name="_addanother">
-          <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">add</i> {% translate 'Salvar e adicionar outro' %}
-        </button>
-      {% endif %}
-    </div>
-    {% if show_delete_link %}
-      <div>
-        <a href="delete/" class="btn btn-outline-danger mb-0">
-          <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">delete</i> {% translate 'Excluir' %}
-        </a>
-      </div>
-    {% endif %}
-  </div>
 {% endblock %}

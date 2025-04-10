@@ -78,10 +78,17 @@ class EscolaAdmin(admin.ModelAdmin):
         # }),
     )
 
-    list_display = [
-        'nome', 'codigo_inep', 'telefone', 'cidade',
-        'estado', 'tipo', 'get_turnos', 'ativo'
-    ]
+    # Novas colunas na listagem
+    list_display = (
+        'nome',
+        'codigo_inep',
+        'telefone',
+        'cidade',
+        'diretor',  # Substituindo 'estado'
+        'tipo',
+        'get_profissionais_count',  # Substituindo 'get_turnos'
+        'capacidade_atendimento',  # Substituindo 'ativo'
+    )
     
     list_filter = [
         'tipo', 'estado', 'turnos', 'ativo'
@@ -92,13 +99,20 @@ class EscolaAdmin(admin.ModelAdmin):
         'diretor', 'cidade', 'bairro'
     ]
     
-    list_editable = ['ativo']
+    # Sem campos editáveis na listagem
+    list_editable = []
     
     filter_horizontal = ['profissionais_educacao', 'profissionais_saude']
     
     def get_turnos(self, obj):
         return obj.get_turnos_display()
     get_turnos.short_description = 'Turnos'
+    
+    def get_profissionais_count(self, obj):
+        # Conta o total de profissionais vinculados (educação + saúde)
+        total = obj.profissionais_educacao.count() + obj.profissionais_saude.count()
+        return total
+    get_profissionais_count.short_description = 'Profissionais'
 
     class Media:
         css = {
@@ -110,5 +124,5 @@ class EscolaAdmin(admin.ModelAdmin):
         js = (
             'admin/js/jquery.mask.min.js',
             'admin/js/escola_admin.js',
-            'admin/js/escola_professionals.js',
+            'admin/js/cep_autocomplete.js',
         )

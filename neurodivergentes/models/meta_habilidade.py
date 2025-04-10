@@ -14,7 +14,7 @@ class MetaHabilidade(models.Model):
         ordering = ['nome']
 
     def __str__(self):
-        return self.nome
+        return "Metas/Habilidades"
 
 class PDIMetaHabilidade(models.Model):
     PROGRESSO_CHOICES = [(i, f'{i}%') for i in range(0, 101, 10)]
