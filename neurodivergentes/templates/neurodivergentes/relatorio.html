@@ -157,14 +157,14 @@
         <table>
             <thead>
                 <tr>
-                    <th>Mês/Ano</th>
+                    <th>Ano</th>
                     <th>Total de Atendimentos</th>
                 </tr>
             </thead>
             <tbody>
                 {% for frequencia in frequencias %}
                 <tr>
-                    <td>{{ frequencia.get_mes_display }}/{{ frequencia.ano }}</td>
+                    <td>{{ frequencia.ano }}</td>
                     <td>{{ frequencia.total_atendimentos }}</td>
                 </tr>
                 {% endfor %}

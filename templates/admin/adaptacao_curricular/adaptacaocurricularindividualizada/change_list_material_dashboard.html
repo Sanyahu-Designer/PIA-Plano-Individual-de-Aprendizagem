@@ -113,8 +113,8 @@
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Status</th>
                         {% else %}
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Idade/Sexo</th>
-                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Total de Adaptações</th>
-                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Última Adaptação</th>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Total de PEIs</th>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Último PEI</th>
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Status</th>
                         {% endif %}
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Ações</th>
@@ -195,7 +195,7 @@
                                 </a>
                               {% else %}
                                 <a href="{% url 'admin:adaptacao_curricular_adaptacaocurricularindividualizada_changelist' %}?aluno__id__exact={{ obj.aluno.id }}" class="btn btn-outline-primary btn-sm mb-0">
-                                  <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">visibility</i> Ver PEI
+                                  <i class="material-symbols-rounded opacity-10" style="font-size: 16px;">visibility</i> Ver PEIs
                                 </a>
                               {% endif %}
                             </div>

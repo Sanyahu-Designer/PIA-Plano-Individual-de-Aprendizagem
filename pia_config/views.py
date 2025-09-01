@@ -1,7 +1,8 @@
 from django.contrib.auth.views import LoginView
 from django.contrib import messages
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import logout
 from django.db.models import Count, Q, F
 from django.utils import timezone
 from django.http import JsonResponse
@@ -32,9 +33,23 @@ class CustomLoginView(LoginView):
 
 @login_required
 def dashboard(request):
-    # Vamos simplificar e usar o dashboard padrão do admin
-    from django.shortcuts import redirect
-    return redirect('admin:index')
+    # Se o usuário é superusuário e está no modo de personificação, redireciona para o dashboard_gerente
+    if hasattr(request, 'is_impersonating') and request.is_impersonating:
+        return redirect('dashboard_gerente')
+    
+    # Se o usuário pertence ao grupo 'Admin da Prefeitura', redireciona para a lista de usuários da prefeitura
+    if request.user.groups.filter(name='Admin da Prefeitura').exists():
+        # Obtém o profile do usuário para encontrar a prefeitura
+        profile = getattr(request.user, 'profile', None)
+        if profile and profile.cliente:
+            return redirect('listar_usuarios_cliente', cliente_id=profile.cliente.id)
+    
+    # Para superusuários, redireciona para o dashboard padrão do admin
+    if request.user.is_superuser:
+        return redirect('admin:index')
+    
+    # Para outros usuários, redireciona para o dashboard_gerente
+    return redirect('dashboard_gerente')
 
 def is_gerente(user):
     """Verifica se o usuário pertence ao grupo 'Gerente'"""
@@ -64,18 +79,18 @@ def dashboard_gerente(request):
             PDI = None
     
     # Estatísticas de Alunos
-    total_alunos = Neurodivergente.objects.count()
+    total_alunos = Neurodivergente.objects.filter(ativo=True).count()
     
     # Alunos novos no último mês
     try:
-        novos_alunos_mes = Neurodivergente.objects.filter(created_at__gte=um_mes_atras).count()
+        novos_alunos_mes = Neurodivergente.objects.filter(created_at__gte=um_mes_atras, ativo=True).count()
     except:
         # Se o campo não existir, usamos um valor calculado
         novos_alunos_mes = int(total_alunos * 0.1)  # Estimativa de 10% de crescimento mensal
     
     # Distribuição por gênero
-    total_masculino = Neurodivergente.objects.filter(genero='M').count()
-    total_feminino = Neurodivergente.objects.filter(genero='F').count()
+    total_masculino = Neurodivergente.objects.filter(genero='M', ativo=True).count()
+    total_feminino = Neurodivergente.objects.filter(genero='F', ativo=True).count()
     
     if total_alunos > 0:
         percentual_masculino = round((total_masculino / total_alunos) * 100)
@@ -112,7 +127,7 @@ def dashboard_gerente(request):
             
             total_alunos_investigacao = Neurodivergente.objects.exclude(
                 id__in=alunos_com_neurodivergencia
-            ).count()
+            ).filter(ativo=True).count()
         except:
             # Se não conseguir fazer a consulta, estimamos
             total_alunos_investigacao = int(total_alunos * 0.15)  # Estimativa de 15% em investigação
@@ -130,13 +145,14 @@ def dashboard_gerente(request):
             
             # Adicionar informação de dias restantes para cada PDI
             pdis_vencendo_lista = []
-            for pdi in pdis_vencendo_query[:10]:  # Limitamos a 10 para a lista
+            for pdi in pdis_vencendo_query[:100]:  # Limitamos a 100 para a lista
                 # Calcular dias restantes corretamente (data do PDI menos hoje)
                 pdi.dias_restantes = (pdi.data_criacao - hoje).days
                 
                 # Adicionar informações do aluno
                 aluno = pdi.neurodivergente
                 aluno.ultimo_atendimento = pdi.data_criacao
+                aluno.profissional_responsavel = pdi.pedagogo_responsavel
                 
                 # Guardar o PDI na lista
                 pdis_vencendo_lista.append(pdi)
@@ -171,14 +187,14 @@ def dashboard_gerente(request):
         profissionais_saude = int(total_profissionais * 0.6)  # 60% saúde
         profissionais_educacao = total_profissionais - profissionais_saude
     
-    # Escolas com maior demanda (ordenadas pelo número de alunos)
+    # Escolas com maior demanda (ordenadas pelo número de alunos ativos)
     try:
         escolas_maior_demanda = Escola.objects.annotate(
-            total_alunos=Count('alunos')
-        ).order_by('-total_alunos')[:5]
+            total_alunos=Count('alunos', filter=Q(alunos__ativo=True))
+        ).order_by('-total_alunos')[:100]
     except:
         # Se não conseguir fazer a consulta com anotação
-        escolas_maior_demanda = Escola.objects.all()[:5]
+        escolas_maior_demanda = Escola.objects.all()[:100]
     
     # Alunos sem atendimento recente (último PDI concluído há mais de 15 dias)
     alunos_sem_atendimento = []
@@ -193,7 +209,7 @@ def dashboard_gerente(request):
             pdis_concluidos = PDI.objects.filter(
                 status='concluido',
                 neurodivergente__ativo=True  # Apenas alunos ativos
-            ).select_related('neurodivergente', 'neurodivergente__escola').order_by('neurodivergente_id', '-data_criacao')
+            ).select_related('neurodivergente', 'neurodivergente__escola', 'pedagogo_responsavel').order_by('neurodivergente_id', '-data_criacao')
             
             # Para cada aluno, pegar o PDI concluído mais recente
             for pdi in pdis_concluidos:
@@ -206,6 +222,7 @@ def dashboard_gerente(request):
                     aluno = pdi.neurodivergente
                     aluno.ultimo_atendimento = pdi.data_criacao
                     aluno.dias_sem_atendimento = dias_sem_atendimento
+                    aluno.profissional_responsavel = pdi.pedagogo_responsavel
                     
                     # Guardar o aluno no dicionário
                     alunos_com_pdi_concluido[aluno_id] = aluno
@@ -219,8 +236,8 @@ def dashboard_gerente(request):
             # Ordenar por dias sem atendimento (decrescente)
             alunos_sem_atendimento.sort(key=lambda x: x.dias_sem_atendimento, reverse=True)
             
-            # Limitar a 10 alunos
-            alunos_sem_atendimento = alunos_sem_atendimento[:10]
+            # Limitar a 100 alunos
+            alunos_sem_atendimento = alunos_sem_atendimento[:100]
             total_sem_atendimento = len([
                 aluno_id for aluno_id, aluno in alunos_com_pdi_concluido.items()
                 if aluno.dias_sem_atendimento > 15
@@ -240,7 +257,7 @@ def dashboard_gerente(request):
         '21+': 0
     }
     
-    for aluno in Neurodivergente.objects.all():
+    for aluno in Neurodivergente.objects.filter(ativo=True):
         try:
             idade = aluno.idade()
         except:
@@ -287,7 +304,8 @@ def dashboard_gerente(request):
                 # Tenta contar os alunos criados neste mês
                 count = Neurodivergente.objects.filter(
                     created_at__gte=inicio_mes,
-                    created_at__lte=fim_mes
+                    created_at__lte=fim_mes,
+                    ativo=True
                 ).count()
                 dados_mensais[11 - i] = count
             except:
@@ -547,6 +565,9 @@ def genero_por_neurodivergencia(request):
             try:
                 # Obter o gênero do neurodivergente
                 neurodivergente = diagnostico.neurodivergencia.neurodivergente
+                # Verificar se o aluno está ativo
+                if not neurodivergente.ativo:
+                    continue
                 genero = neurodivergente.genero if hasattr(neurodivergente, 'genero') else None
                 
                 # Obter o nome da condição (neurodivergência)
@@ -659,12 +680,18 @@ def distribuicao_por_neurodivergencia(request):
         
         # Obter todos os diagnósticos com suas relações
         diagnosticos = DiagnosticoNeurodivergente.objects.select_related(
-            'condicao'
+            'condicao',
+            'neurodivergencia__neurodivergente'
         ).all()
         
         # Contar diagnósticos por neurodivergência
         for diagnostico in diagnosticos:
             try:
+                # Verificar se o aluno está ativo
+                neurodivergente = diagnostico.neurodivergencia.neurodivergente
+                if not neurodivergente.ativo:
+                    continue
+                    
                 # Obter o nome da condição (neurodivergência)
                 if hasattr(diagnostico, 'condicao') and hasattr(diagnostico.condicao, 'nome'):
                     nome_condicao = diagnostico.condicao.nome
@@ -897,10 +924,21 @@ def alunos_em_risco(request):
         for aluno_data in alunos_ausencias:
             try:
                 aluno = Neurodivergente.objects.get(id=aluno_data['neurodivergente'])
+                
+                # Buscar o PDI mais recente para obter o profissional responsável
+                ultimo_pdi = PDI.objects.filter(
+                    neurodivergente=aluno
+                ).select_related('pedagogo_responsavel').order_by('-data_criacao').first()
+                
+                profissional_nome = "Não informado"
+                if ultimo_pdi and ultimo_pdi.pedagogo_responsavel:
+                    profissional_nome = f"{ultimo_pdi.pedagogo_responsavel.user.first_name} {ultimo_pdi.pedagogo_responsavel.user.last_name}".strip()
+                
                 alunos_risco.append({
                     'id': aluno.id,
                     'nome': aluno.nome_completo,
                     'escola': aluno.escola.nome if aluno.escola else "Não informada",
+                    'profissional_responsavel': profissional_nome,
                     'tipo_risco': 'Ausências Consecutivas',
                     'detalhe': f'{aluno_data["total_faltas"]} faltas nos últimos 90 dias',
                     'severidade': 'alta'
@@ -912,12 +950,12 @@ def alunos_em_risco(request):
         print("\n=== Verificando alunos sem atendimento recente ===")
         
         # Listar todos os alunos para depuração
-        todos_alunos = Neurodivergente.objects.all()
+        todos_alunos = Neurodivergente.objects.filter(ativo=True)
         print(f"Total de alunos no sistema: {todos_alunos.count()}")
         for a in todos_alunos:
             print(f"ID: {a.id}, Nome: {a.nome_completo}")
         
-        for aluno in Neurodivergente.objects.all():
+        for aluno in Neurodivergente.objects.filter(ativo=True):
             # Adicionar log para rastrear o processamento de cada aluno
             print(f"\nVerificando aluno: {aluno.id} - {aluno.nome_completo}")
             
@@ -950,10 +988,17 @@ def alunos_em_risco(request):
                         if not ja_na_lista:
                             print(f"  - ADICIONANDO aluno {aluno.nome_completo} à lista de risco (Sem Atendimento Recente)")
                             detalhe = f"{dias_sem_atendimento} dias sem atendimento"
+                            
+                            # Obter profissional responsável do último PDI
+                            profissional_nome = "Não informado"
+                            if ultimo_pdi and ultimo_pdi.pedagogo_responsavel:
+                                profissional_nome = f"{ultimo_pdi.pedagogo_responsavel.user.first_name} {ultimo_pdi.pedagogo_responsavel.user.last_name}".strip()
+                            
                             alunos_risco.append({
                                 'id': aluno.id,
                                 'nome': aluno.nome_completo,
                                 'escola': aluno.escola.nome if aluno.escola else "Não informada",
+                                'profissional_responsavel': profissional_nome,
                                 'tipo_risco': 'Sem Atendimento Recente',
                                 'detalhe': detalhe,
                                 'severidade': 'média'
@@ -974,6 +1019,7 @@ def alunos_em_risco(request):
                             'id': aluno.id,
                             'nome': aluno.nome_completo,
                             'escola': aluno.escola.nome if aluno.escola else "Não informada",
+                            'profissional_responsavel': "Não informado",
                             'tipo_risco': 'Sem Atendimento Recente',
                             'detalhe': "Nunca recebeu atendimento",
                             'severidade': 'alta'
@@ -986,53 +1032,7 @@ def alunos_em_risco(request):
                 traceback.print_exc()
                 continue
         
-        # 4. Alunos com objetivos não alcançados (PDIs com progresso médio abaixo de 50%)
-        from django.db.models import Avg
-        
-        print("\n=== Verificando alunos com objetivos não alcançados ===")
-        
-        # Buscar todos os alunos que têm pelo menos um PDI concluído com progresso abaixo de 50%
-        for aluno in Neurodivergente.objects.all():
-            print(f"\nVerificando objetivos não alcançados para aluno: {aluno.id} - {aluno.nome_completo}")
-            
-            # Buscar PDIs concluídos do aluno dentro do período de referência
-            pdis_concluidos = PDI.objects.filter(
-                neurodivergente=aluno,
-                status='concluido',
-                data_criacao__gte=data_referencia
-            )
-            
-            print(f"  - Total de PDIs concluídos para {aluno.nome_completo}: {pdis_concluidos.count()}")
-            
-            for pdi in pdis_concluidos:
-                # Calcular o progresso médio para este PDI específico
-                progresso_medio = pdi.metas_habilidades.aggregate(Avg('progresso'))['progresso__avg']
-                progresso = int(progresso_medio) if progresso_medio is not None else 0
-                print(f"    PDI ID: {pdi.id}, Data: {pdi.data_criacao}, Progresso médio: {progresso}%")
-                
-                # Verificar se o progresso está abaixo de 50%
-                if progresso < 50:
-                    print(f"    - PDI com progresso abaixo de 50%")
-                    
-                    # Verificar se este aluno já está na lista por este motivo específico
-                    ja_na_lista = any(item['id'] == aluno.id and item['tipo_risco'] == 'Objetivos Não Alcançados' for item in alunos_risco)
-                    print(f"    - Já na lista por Objetivos Não Alcançados? {ja_na_lista}")
-                    
-                    if not ja_na_lista:
-                        print(f"    - ADICIONANDO aluno {aluno.nome_completo} à lista de risco (Objetivos Não Alcançados)")
-                        alunos_risco.append({
-                            'id': aluno.id,
-                            'nome': aluno.nome_completo,
-                            'escola': aluno.escola.nome if aluno.escola else "Não informada",
-                            'tipo_risco': 'Objetivos Não Alcançados',
-                            'detalhe': 'PDI concluído com progresso abaixo de 50%',
-                            'severidade': 'média'  # Alterado de 'baixa' para 'média'
-                        })
-                        # Uma vez que encontramos um PDI com baixo progresso, não precisamos verificar os outros
-                        break
-                    else:
-                        print(f"    - Aluno {aluno.nome_completo} já está na lista por Objetivos Não Alcançados")
-                        break
+        # 4. Verificação de objetivos não alcançados removida conforme solicitado
         # 5. PDIs desatualizados (sem atualização há mais de 60 dias)
         alunos_pdi_desatualizado = PDI.objects.filter(
             updated_at__lt=data_desatualizado,
@@ -1044,10 +1044,20 @@ def alunos_em_risco(request):
                 aluno = Neurodivergente.objects.get(id=aluno_data['neurodivergente'])
                 # Verificar se este aluno já está na lista por este motivo
                 if not any(item['id'] == aluno.id and item['tipo_risco'] == 'PDI Desatualizado' for item in alunos_risco):
+                    # Buscar o PDI mais recente para obter o profissional responsável
+                    ultimo_pdi = PDI.objects.filter(
+                        neurodivergente=aluno
+                    ).select_related('pedagogo_responsavel').order_by('-data_criacao').first()
+                    
+                    profissional_nome = "Não informado"
+                    if ultimo_pdi and ultimo_pdi.pedagogo_responsavel:
+                        profissional_nome = f"{ultimo_pdi.pedagogo_responsavel.user.first_name} {ultimo_pdi.pedagogo_responsavel.user.last_name}".strip()
+                    
                     alunos_risco.append({
                         'id': aluno.id,
                         'nome': aluno.nome_completo,
                         'escola': aluno.escola.nome if aluno.escola else "Não informada",
+                        'profissional_responsavel': profissional_nome,
                         'tipo_risco': 'PDI Desatualizado',
                         'detalhe': 'PDI sem atualização há mais de 60 dias',
                         'severidade': 'média'
@@ -1066,21 +1076,284 @@ def alunos_em_risco(request):
         
         alunos_risco.sort(key=ordem_severidade)
         
-        print("\n=== Alunos em risco (resultado final) ===")
-        for aluno in alunos_risco:
+        # Limitar a 100 alunos para melhor visualização no dashboard
+        alunos_risco_limitado = alunos_risco[:100]
+        
+        print("\n=== Alunos em risco (resultado final - limitado a 100) ===")
+        for aluno in alunos_risco_limitado:
             print(f"ID: {aluno['id']}, Nome: {aluno['nome']}, Tipo: {aluno['tipo_risco']}, Detalhe: {aluno['detalhe']}")
         
+        print(f"Total de alunos em risco: {len(alunos_risco)} | Exibindo: {len(alunos_risco_limitado)}")
         print("==== FIM DA FUNÇÃO ALUNOS EM RISCO ====\n\n")
         
-        return JsonResponse({'alunos_risco': alunos_risco})
+        return JsonResponse({
+            'alunos_risco': alunos_risco_limitado,
+            'total_alunos': len(alunos_risco),
+            'exibindo': len(alunos_risco_limitado)
+        })
     except Exception as e:
         print(f"Erro ao buscar dados de alunos em risco: {e}")
         return JsonResponse({'alunos_risco': []})
 
+@login_required
+def atendimentos_mensais_profissional(request):
+    """
+    Retorna dados de atendimentos mensais por profissional para o gráfico do dashboard.
+    Suporta filtros por profissional e período.
+    """
+    try:
+        from neurodivergentes.models import PDI
+        from profissionais_app.models import Profissional
+        from django.db.models import Count, Q
+        from django.db.models.functions import TruncMonth
+        from datetime import datetime, timedelta
+        import calendar
+        
+        # Obter filtros da requisição
+        profissional_id = request.GET.get('profissional_id', '')
+        periodo = request.GET.get('periodo', '')  # formato: 2024-01 ou vazio para últimos 12 meses
+        
+        # Definir período de análise
+        hoje = timezone.now().date()
+        if periodo:
+            # Período específico (um mês)
+            ano, mes = periodo.split('-')
+            data_inicio = datetime(int(ano), int(mes), 1).date()
+            if int(mes) == 12:
+                data_fim = datetime(int(ano) + 1, 1, 1).date() - timedelta(days=1)
+            else:
+                data_fim = datetime(int(ano), int(mes) + 1, 1).date() - timedelta(days=1)
+        else:
+            # Últimos 12 meses
+            data_inicio = hoje.replace(day=1) - timedelta(days=365)
+            data_fim = hoje
+        
+        # Buscar atendimentos de todos os profissionais através dos PDIs
+        # Como PDI só tem pedagogo_responsavel, vamos buscar por esse campo
+        # mas também incluir outros profissionais que possam estar relacionados
+        
+        # Query base para PDIs no período - apenas concluídos
+        pdis_query = PDI.objects.filter(
+            data_criacao__gte=data_inicio,
+            data_criacao__lte=data_fim,
+            status='concluido'
+        )
+        
+        # Filtrar por profissional se especificado
+        if profissional_id:
+            pdis_query = pdis_query.filter(pedagogo_responsavel_id=profissional_id)
+        
+        # Agrupar por mês e profissional
+        if periodo:
+            # Para um mês específico, mostrar por profissional
+            dados_agrupados = pdis_query.values(
+                'pedagogo_responsavel__user__first_name',
+                'pedagogo_responsavel__user__last_name',
+                'pedagogo_responsavel__profissao',
+                'pedagogo_responsavel_id'
+            ).annotate(
+                total_atendimentos=Count('id')
+            ).order_by('-total_atendimentos')
+            
+            labels = []
+            data = []
+            
+            for item in dados_agrupados:
+                if item['pedagogo_responsavel__user__first_name']:
+                    primeiro_nome = item['pedagogo_responsavel__user__first_name']
+                    profissao_raw = item['pedagogo_responsavel__profissao'] or 'profissional'
+                    # Formatar profissão: substituir _ por espaço e capitalizar
+                    profissao = profissao_raw.replace('_', ' ').title()
+                    nome = f"{primeiro_nome} - {profissao}"
+                else:
+                    nome = f"Prof. {item['pedagogo_responsavel_id']}"
+                
+                labels.append(nome)
+                data.append(item['total_atendimentos'])
+            
+            # Nomes dos meses em português
+            nomes_meses_pt = {
+                1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+                5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+                9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+            }
+            
+            mes_num = int(periodo.split("-")[1])
+            ano = periodo.split("-")[0]
+            mes_nome = nomes_meses_pt[mes_num]
+            
+            datasets = [{
+                'label': f'Atendimentos concluídos em {mes_nome} {ano}',
+                'data': data,
+                'backgroundColor': 'rgba(76, 175, 80, 0.7)',
+                'borderColor': 'rgba(76, 175, 80, 1)',
+                'borderWidth': 1
+            }]
+            
+        else:
+            # Para últimos 12 meses, mostrar evolução temporal
+            if profissional_id:
+                # Um profissional específico ao longo dos meses
+                dados_agrupados = pdis_query.filter(
+                    pedagogo_responsavel_id=profissional_id
+                ).annotate(
+                    mes=TruncMonth('data_criacao')
+                ).values('mes').annotate(
+                    total_atendimentos=Count('id')
+                ).order_by('mes')
+                
+                # Criar labels dos últimos 12 meses
+                labels = []
+                data = []
+                
+                for i in range(12):
+                    mes_atual = (hoje.replace(day=1) - timedelta(days=30*i)).replace(day=1)
+                    labels.insert(0, f"{calendar.month_name[mes_atual.month][:3]} {mes_atual.year}")
+                    
+                    # Buscar dados para este mês
+                    total = 0
+                    for item in dados_agrupados:
+                        if item['mes'].month == mes_atual.month and item['mes'].year == mes_atual.year:
+                            total = item['total_atendimentos']
+                            break
+                    data.insert(0, total)
+                
+                # Obter nome do profissional
+                try:
+                    prof = Profissional.objects.get(id=profissional_id)
+                    primeiro_nome = prof.user.first_name
+                    profissao_raw = prof.profissao or 'profissional'
+                    # Formatar profissão: substituir _ por espaço e capitalizar
+                    profissao = profissao_raw.replace('_', ' ').title()
+                    nome_prof = f"{primeiro_nome} - {profissao}"
+                except:
+                    nome_prof = f"Prof. {profissional_id}"
+                
+                datasets = [{
+                    'label': f'Atendimentos concluídos - {nome_prof}',
+                    'data': data,
+                    'backgroundColor': 'rgba(76, 175, 80, 0.7)',
+                    'borderColor': 'rgba(76, 175, 80, 1)',
+                    'borderWidth': 1
+                }]
+                
+            else:
+                # Todos os profissionais - top 5 nos últimos 12 meses
+                dados_agrupados = pdis_query.values(
+                    'pedagogo_responsavel__user__first_name',
+                    'pedagogo_responsavel__user__last_name',
+                    'pedagogo_responsavel__profissao',
+                    'pedagogo_responsavel_id'
+                ).annotate(
+                    total_atendimentos=Count('id')
+                ).order_by('-total_atendimentos')[:5]
+                
+                labels = []
+                data = []
+                
+                for item in dados_agrupados:
+                    if item['pedagogo_responsavel__user__first_name']:
+                        primeiro_nome = item['pedagogo_responsavel__user__first_name']
+                        profissao_raw = item['pedagogo_responsavel__profissao'] or 'profissional'
+                        # Formatar profissão: substituir _ por espaço e capitalizar
+                        profissao = profissao_raw.replace('_', ' ').title()
+                        nome = f"{primeiro_nome} - {profissao}"
+                    else:
+                        nome = f"Prof. {item['pedagogo_responsavel_id']}"
+                    
+                    labels.append(nome)
+                    data.append(item['total_atendimentos'])
+                
+                datasets = [{
+                    'label': 'Atendimentos concluídos (Últimos 12 meses)',
+                    'data': data,
+                    'backgroundColor': 'rgba(76, 175, 80, 0.7)',
+                    'borderColor': 'rgba(76, 175, 80, 1)',
+                    'borderWidth': 1
+                }]
+        
+        return JsonResponse({
+            'labels': labels,
+            'datasets': datasets
+        })
+        
+    except Exception as e:
+        print(f"Erro ao buscar dados de atendimentos mensais por profissional: {e}")
+        return JsonResponse({
+            'labels': [],
+            'datasets': [{
+                'label': 'Atendimentos',
+                'data': [],
+                'backgroundColor': 'rgba(76, 175, 80, 0.7)',
+                'borderColor': 'rgba(76, 175, 80, 1)',
+                'borderWidth': 1
+            }]
+        })
+
+@login_required
+def lista_profissionais_api(request):
+    """
+    Retorna lista de profissionais para popular o dropdown de filtros.
+    """
+    try:
+        from profissionais_app.models import Profissional
+        
+        profissionais = Profissional.objects.select_related('user').all().order_by('user__first_name')
+        
+        lista = []
+        for prof in profissionais:
+            nome = prof.user.get_full_name() or f"Prof. {prof.id}"
+            lista.append({
+                'id': prof.id,
+                'nome': nome
+            })
+        
+        return JsonResponse({'profissionais': lista})
+        
+    except Exception as e:
+        print(f"Erro ao buscar lista de profissionais: {e}")
+        return JsonResponse({'profissionais': []})
+
+# View para a página inicial que verifica se o usuário já está autenticado
+def index_view(request):
+    """
+    View para a página inicial. Se o usuário já estiver autenticado,
+    redireciona automaticamente para o dashboard. Caso contrário,
+    mostra a página de login.
+    """
+    # Verifica se o usuário já está autenticado
+    if request.user.is_authenticated:
+        # Redireciona para o dashboard
+        return redirect('dashboard')
+    else:
+        # Usa a CustomLoginView para mostrar a página de login
+        return CustomLoginView.as_view()(request)
+
+# Função de logout personalizada
+def custom_logout(request):
+    """
+    View personalizada para processar o logout e redirecionar para a página de login.
+    """
+    # Executa o logout
+    logout(request)
+    
+    # Adiciona mensagem de sucesso
+    messages.success(request, 'Você saiu do sistema com sucesso.')
+    
+    # Redireciona para a página de login
+    return redirect('login')
+
 # Handler para erros 403 (acesso negado)
 def custom_permission_denied_view(request, exception=None):
     """
-    View para exibir página amigável de acesso negado (403).
+    View para exibir mensagem de acesso negado e redirecionar para o dashboard.
     """
-    response = render(request, '403.html', status=403)
-    return response
+    # Adicionar mensagem de alerta que será exibida no dashboard
+    messages.warning(
+        request, 
+        'Você não tem permissão para acessar esta página. '
+        'Se você acredita que isso é um erro, entre em contato com o administrador da instituição.'
+    )
+    
+    # Redirecionar para o dashboard
+    return redirect('/dashboard/')

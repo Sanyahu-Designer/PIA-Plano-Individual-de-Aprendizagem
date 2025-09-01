@@ -30,8 +30,7 @@ class SeriesCursadas(models.Model):
     nome = models.CharField(
         'Série',
         max_length=10,
-        choices=[item for group in SERIES_CHOICES for item in group[1]],
-        unique=True
+        choices=[item for group in SERIES_CHOICES for item in group[1]]
     )
     categoria = models.CharField(
         'Categoria',

@@ -138,6 +138,8 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleDependentField('#id_prematuridade', '#id_tempo_prematuridade');
     toggleDependentField('#id_convenio_medico', '#id_nome_convenio');
     toggleDependentField('#id_restricoes_alimentares', '#id_descricao_restricoes');
+    toggleDependentField('#id_nao_possui_convenio', '#id_motivo_nao_possui_convenio');
+
 
     // Formatação de JSON
     function formatJsonField(fieldId) {

@@ -234,7 +234,7 @@
             </div>
             <h1>RELATÓRIO INDIVIDUAL - PAEE</h1>
             <h2>{{ aluno.nome_completo }}</h2>
-            <p>Data do PAEE: {{ pei.get_mes_display }}/{{ pei.ano }}</p>
+            <p>Data do PAEE: {{ pei.ano }}</p>
             <p>Relatório gerado em {{ data_impressao|date:"d/m/Y H:i" }}</p>
         </div>
 
@@ -244,7 +244,7 @@
                 <div class="info-row">
                     <div class="info-col">
                         <div class="section-title">Período</div>
-                        <div class="section-content">{{ pei.get_mes_display }}/{{ pei.ano }}</div>
+                        <div class="section-content">{{ pei.ano }}</div>
                     </div>
                     <div class="info-col">
                         <div class="section-title">Profissional Responsável</div>

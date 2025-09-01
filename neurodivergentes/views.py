@@ -6,7 +6,6 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.conf import settings
 from weasyprint import HTML, CSS
-from .choices import MESES
 from django.urls import reverse
 from django.contrib import messages
 from datetime import datetime
@@ -391,6 +390,9 @@ def gerar_relatorio_pdf(request, neurodivergente_id):
             for data in datas_unicas
         ]
     
+    # Calcula total de ausências no período
+    total_ausencias = pdis.filter(status='ausente').count()
+    
     # Prepara contexto com todos os dados
     context = {
         'neurodivergente': neurodivergente,
@@ -404,6 +406,7 @@ def gerar_relatorio_pdf(request, neurodivergente_id):
         'total_pdis': len(pdis_list),
         'total_evolucoes': len(pdis_list),
         'frequencia_media': len(pdis_list),  # Adicionando a frequência
+        'total_ausencias': total_ausencias,  # Adicionando total de ausências
         'periodo': {
             'inicio': datetime.strptime(data_inicial, '%Y-%m-%d').strftime('%d/%m/%Y'),
             'fim': datetime.strptime(data_final, '%Y-%m-%d').strftime('%d/%m/%Y')
@@ -578,6 +581,13 @@ def gerar_relatorio_geral_html(request, neurodivergente_id):
         nome_prefeitura = config.nome_municipio if config else None
         cnpj_prefeitura = config.cnpj if config else None
         
+        # Calcula total de ausências no período
+        total_ausencias = PDI.objects.filter(
+            neurodivergente=neurodivergente,
+            data_criacao__range=(data_inicial_dt, data_final_dt),
+            status='ausente'
+        ).count()
+        
         # Prepara contexto com todos os dados
         context = {
             'neurodivergente': neurodivergente,
@@ -593,6 +603,7 @@ def gerar_relatorio_geral_html(request, neurodivergente_id):
             'pedagogo': pedagogo,
             'escola': escola,
             'frequencia_media': frequencia_media,
+            'total_ausencias': total_ausencias,  # Adicionando total de ausências
             'datas_metas': datas_metas,
             'logo_prefeitura_url': logo_prefeitura_url,
             'nome_prefeitura': nome_prefeitura,
@@ -1206,28 +1217,22 @@ def lista_pei(request, aluno_id):
     aluno = get_object_or_404(Neurodivergente, id=aluno_id)
     
     # Obtém os filtros
-    mes = request.GET.get('mes')
     ano = request.GET.get('ano')
     
     # Query base
     peis = Monitoramento.objects.filter(neurodivergente=aluno)
     
     # Aplica os filtros
-    if mes:
-        peis = peis.filter(mes=mes)
     if ano:
         peis = peis.filter(ano=ano)
     
-    # Ordenação
-    peis = peis.order_by('-ano', '-mes')
+    # Ordena por ano (mais recente primeiro)
+    peis = peis.order_by('-ano')
     
     # Paginação
     paginator = Paginator(peis, 10)
     page = request.GET.get('page')
     peis = paginator.get_page(page)
-    
-    # Lista de meses para o filtro
-    meses = MESES
     
     # Lista de anos (do mais recente para o mais antigo)
     anos = sorted(set(Monitoramento.objects.filter(
@@ -1237,9 +1242,7 @@ def lista_pei(request, aluno_id):
     context = {
         'aluno': aluno,
         'peis': peis,
-        'meses': meses,
         'anos': anos,
-        'mes_selecionado': int(mes) if mes else None,
         'ano_selecionado': int(ano) if ano else None,
     }
     
@@ -1604,40 +1607,28 @@ def imprimir_parecer(request, parecer_id):
 
 @login_required
 def gerar_relatorio_pei_pdf(request, neurodivergente_id):
-    """View para gerar o relatório geral de PEIs em PDF"""
+    """View para gerar o relatório geral de PAEEs em PDF"""
     # Obtém os filtros
-    mes_inicial = request.GET.get('mes_inicial')
-    mes_final = request.GET.get('mes_final')
     ano = request.GET.get('ano')
     
-    if not mes_inicial or not mes_final or not ano:
-        messages.error(request, 'Por favor, selecione o mês inicial, mês final e ano para gerar o relatório.')
-        return redirect('neurodivergentes:lista_pei', neurodivergente_id=neurodivergente_id)
-    
-    # Converte para inteiros para comparação
-    mes_inicial = int(mes_inicial)
-    mes_final = int(mes_final)
-    
-    if mes_final < mes_inicial:
-        messages.error(request, 'O mês final deve ser maior ou igual ao mês inicial.')
+    if not ano:
+        messages.error(request, 'Por favor, selecione o ano para gerar o relatório.')
         return redirect('neurodivergentes:lista_pei', neurodivergente_id=neurodivergente_id)
     
     neurodivergente = get_object_or_404(Neurodivergente, id=neurodivergente_id)
     
-    # Filtra os PEIs pelo período
+    # Filtra os PAEEs pelo ano
     peis = Monitoramento.objects.filter(
         neurodivergente=neurodivergente,
-        mes__gte=mes_inicial,
-        mes__lte=mes_final,
         ano=ano
     ).select_related(
         'pedagogo_responsavel'
     ).prefetch_related(
         'metas'
-    ).order_by('mes')
+    ).order_by('ano')
     
     if not peis.exists():
-        messages.warning(request, 'Nenhum PEI encontrado no período selecionado.')
+        messages.warning(request, 'Nenhum PAEE encontrado no ano selecionado.')
         return redirect('neurodivergentes:lista_pei', neurodivergente_id=neurodivergente_id)
     
     # Buscar dados institucionais para o cabeçalho
@@ -1649,7 +1640,7 @@ def gerar_relatorio_pei_pdf(request, neurodivergente_id):
     context = {
         'aluno': neurodivergente,
         'peis': peis,
-        'periodo': f"{dict(MESES)[mes_inicial]} a {dict(MESES)[mes_final]} de {ano}",
+        'periodo': f"Ano de {ano}",
         'data_impressao': timezone.now(),
         'logo_prefeitura_url': logo_prefeitura_url,
         'nome_prefeitura': nome_prefeitura,
@@ -1745,7 +1736,7 @@ def imprimir_anamnese(request, anamnese_id):
 def imprimir_aluno(request, aluno_id):
     """View para imprimir um relatório completo do Aluno/Paciente"""
     aluno = get_object_or_404(
-        Neurodivergente.objects.select_related('escola', 'ano_escolar'),
+        Neurodivergente.objects.select_related('escola'),
         id=aluno_id
     )
     

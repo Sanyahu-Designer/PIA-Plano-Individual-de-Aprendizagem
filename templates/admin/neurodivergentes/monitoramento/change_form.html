@@ -138,7 +138,7 @@
       <div class="row">
         {% for line in fieldset %}
           {% for field in line %}
-            <div class="{% if field.field.name == 'id' %}d-none{% else %}col-md-6 mb-3{% endif %} {% if field.field.name in 'observacoes,metas' %}field-{{ field.field.name }}{% endif %} {% if field.field.name == 'neurodivergente' %}field-neurodivergente{% endif %} {% if field.field.name == 'pedagogo_responsavel' %}field-pedagogo_responsavel{% endif %}">
+            <div class="{% if field.field.name == 'id' %}d-none{% elif field.field.name == 'observacoes' %}col-md-12 mb-3{% else %}col-md-6 mb-3{% endif %} {% if field.field.name in 'observacoes,metas' %}field-{{ field.field.name }}{% endif %} {% if field.field.name == 'neurodivergente' %}field-neurodivergente{% endif %} {% if field.field.name == 'pedagogo_responsavel' %}field-pedagogo_responsavel{% endif %}">
               <div class="form-group{% if field.field.required %} required{% endif %}">
                 {% if field.is_checkbox %}
                   <div class="form-check">

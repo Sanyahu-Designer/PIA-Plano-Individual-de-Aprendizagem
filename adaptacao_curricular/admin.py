@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 from django.urls import path, reverse
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.db import models
 from django.core.exceptions import PermissionDenied
 from django.utils.html import format_html
@@ -311,7 +311,7 @@ class AdaptacaoCurricularIndividualizadaAdmin(admin.ModelAdmin):
         if not obj.aluno:
             return '0'
         return AdaptacaoCurricularIndividualizada.objects.filter(aluno=obj.aluno).count()
-    get_total_adaptacoes.short_description = 'Total de Adaptações'
+    get_total_adaptacoes.short_description = 'Total de PEIs'
 
     def get_ultima_adaptacao(self, obj):
         """
@@ -326,7 +326,7 @@ class AdaptacaoCurricularIndividualizadaAdmin(admin.ModelAdmin):
             # Formata a data no padrão brasileiro dd/mm/aaaa
             return ultima.data_cadastro.strftime('%d/%m/%Y')
         return '-'
-    get_ultima_adaptacao.short_description = 'Última Adaptação'
+    get_ultima_adaptacao.short_description = 'Último PEI'
     get_ultima_adaptacao.admin_order_field = 'data_cadastro'
 
     def get_view_button(self, obj):
@@ -338,10 +338,10 @@ class AdaptacaoCurricularIndividualizadaAdmin(admin.ModelAdmin):
         url = f"{reverse('admin:adaptacao_curricular_adaptacaocurricularindividualizada_changelist')}?aluno__id__exact={obj.aluno.id}"
         return format_html(
             '<a href="{}" class="btn btn-outline-primary btn-sm mb-0">' 
-            '<i class="material-symbols-rounded opacity-10" style="font-size: 16px;">visibility</i> Ver Adaptações</a>',
+            '<i class="material-symbols-rounded opacity-10" style="font-size: 16px;">visibility</i> Ver PEIs</a>',
             url
         )
-    get_view_button.short_description = 'Ver Adaptações'
+    get_view_button.short_description = 'Ver PEIs'
 
     def get_acoes(self, obj):
         """
@@ -560,3 +560,23 @@ class AdaptacaoCurricularIndividualizadaAdmin(admin.ModelAdmin):
             except Profissional.DoesNotExist:
                 pass
         super().save_model(request, obj, form, change)
+    
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Redireciona para a lista de PDIs do aluno após adicionar um novo PDI.
+        """
+        if obj and obj.aluno:
+            # Redireciona para a lista de PDIs do aluno específico
+            redirect_url = f"{reverse('admin:adaptacao_curricular_adaptacaocurricularindividualizada_changelist')}?aluno__id__exact={obj.aluno.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_add(request, obj, post_url_continue)
+    
+    def response_change(self, request, obj):
+        """
+        Redireciona para a lista de PDIs do aluno após editar um PDI.
+        """
+        if obj and obj.aluno:
+            # Redireciona para a lista de PDIs do aluno específico
+            redirect_url = f"{reverse('admin:adaptacao_curricular_adaptacaocurricularindividualizada_changelist')}?aluno__id__exact={obj.aluno.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_change(request, obj)

@@ -60,6 +60,15 @@ class ProfissionalAdmin(admin.ModelAdmin):
     list_filter = ['profissao', 'estado', 'experiencia_neurodiversidade']
     search_fields = ['user__first_name', 'user__last_name', 'user__email', 'celular']
     ordering = ['user__first_name', 'user__last_name']
+    
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Customiza a busca para funcionar com o autocomplete do Django Admin
+        """
+        queryset, may_have_duplicates = super().get_search_results(
+            request, queryset, search_term,
+        )
+        return queryset, may_have_duplicates
 
     fieldsets = (
         ('Usuário', {

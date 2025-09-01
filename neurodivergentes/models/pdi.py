@@ -9,7 +9,7 @@ class PDI(models.Model):
     STATUS_CHOICES = [
         ('ausente', 'Ausente'),  # NOVO STATUS PRIMEIRA OPÇÃO
         ('iniciado', 'Iniciado'),
-        ('em_andamento', 'Em Andamento'),
+        ('em_andamento', 'Em Planejamento'),
         ('concluido', 'Concluído'),
         ('suspenso', 'Suspenso'),
         ('cancelado', 'Cancelado')

@@ -1,6 +1,6 @@
 from .base import Neurodivergente
 from .grupo_familiar import GrupoFamiliar
-from .historico_escolar import HistoricoEscolar, SeriesCursadas
+# Histórico escolar removido - não é mais necessário, SeriesCursadas
 from .neurodivergencias import (
     Neurodivergencia, CondicaoNeurodivergente,
     CategoriaNeurodivergente, DiagnosticoNeurodivergente
@@ -8,7 +8,7 @@ from .neurodivergencias import (
 from .anamnese import Anamnese, Medicacao, RotinaAtividade
 from .pdi import PDI, PlanoEducacional, AdaptacaoCurricular
 from .evolucao import RegistroEvolucao
-from .pei import Monitoramento
+from .pei import Monitoramento, MonitoramentoMeta
 from .parecer import ParecerAvaliativo
 from .meta_habilidade import MetaHabilidade, PDIMetaHabilidade
 from escola.models import ModalidadeEnsino, ProgramaEducacional, Recurso, Escola
@@ -16,8 +16,6 @@ from escola.models import ModalidadeEnsino, ProgramaEducacional, Recurso, Escola
 __all__ = [
     'Neurodivergente',
     'GrupoFamiliar',
-    'HistoricoEscolar',
-    'SeriesCursadas',
     'Neurodivergencia',
     'CondicaoNeurodivergente',
     'CategoriaNeurodivergente',
@@ -30,6 +28,7 @@ __all__ = [
     'AdaptacaoCurricular',
     'RegistroEvolucao',
     'Monitoramento',
+    'MonitoramentoMeta',
     'ParecerAvaliativo',
     'MetaHabilidade',
     'PDIMetaHabilidade',

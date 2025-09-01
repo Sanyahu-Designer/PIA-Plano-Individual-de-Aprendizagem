@@ -5,6 +5,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
 from django.utils.html import format_html
+from django.http import HttpResponseRedirect
 from django.db.models import Count, Subquery, OuterRef, Avg
 from django.db import models
 from django.urls import reverse
@@ -15,7 +16,7 @@ from .choices import MESES
 from escola.models import ModalidadeEnsino, ProgramaEducacional, Recurso, Escola
 from escola.forms import EscolaForm
 from .models import (
-    Neurodivergente, GrupoFamiliar, HistoricoEscolar,
+    Neurodivergente, GrupoFamiliar,
     Neurodivergencia, CondicaoNeurodivergente,
     CategoriaNeurodivergente, DiagnosticoNeurodivergente,
     Anamnese, PDI, MetaHabilidade, PDIMetaHabilidade,
@@ -23,7 +24,7 @@ from .models import (
     Monitoramento, ParecerAvaliativo
 )
 from .forms import (
-    NeurodivergenteForms, PDIForm, PlanoEducacionalForm,
+    NeurodivergenteForms, GrupoFamiliarForm, PDIForm, PlanoEducacionalForm,
     AdaptacaoCurricularForm, RegistroEvolucaoForm,
     MonitoramentoForm, ParecerAvaliativoForm, NeurodivergenciaForm,
     AnamneseForm
@@ -34,7 +35,8 @@ from django.shortcuts import get_object_or_404
 
 class GrupoFamiliarInline(admin.StackedInline):
     model = GrupoFamiliar
-    extra = 1  # Permite adicionar pelo menos um novo membro por padrão
+    form = GrupoFamiliarForm
+    extra = 2  # Permite adicionar pelo menos dois novos membros por padrão
     template = 'admin/neurodivergentes/edit_inline/stacked_grupo_familiar.html'
     can_delete = True
     show_change_link = False
@@ -110,6 +112,15 @@ class NeurodivergenteAdmin(admin.ModelAdmin):
     list_display = ['primeiro_nome', 'ultimo_nome', 'idade', 'cidade', 'estado']
     list_filter = ['estado', 'genero']
     search_fields = ['primeiro_nome', 'ultimo_nome', 'cpf']
+    
+    def get_search_results(self, request, queryset, search_term):
+        """
+        Customiza a busca para funcionar com o autocomplete do Django Admin
+        """
+        queryset, may_have_duplicates = super().get_search_results(
+            request, queryset, search_term,
+        )
+        return queryset, may_have_duplicates
     formfield_overrides = {
         models.DateField: {'widget': forms.DateInput(attrs={'class': 'vDateField', 'type': 'date'})}
     }
@@ -124,7 +135,8 @@ class NeurodivergenteAdmin(admin.ModelAdmin):
         }),
         ('Informações Complementares', {
             'fields': (
-                ('nacionalidade', 'pais_origem', 'cor_pele', 'tipo_sanguineo'),
+                ('nacionalidade', 'naturalidade'),
+                ('pais_origem', 'cor_pele', 'tipo_sanguineo'),
             ),
             'classes': ('tab-info-complementares',)
         }),
@@ -143,7 +155,7 @@ class NeurodivergenteAdmin(admin.ModelAdmin):
         }),
         ('Informações Escolares', {
             'fields': (
-                'escola', 'ano_escolar', 'ativo'
+                'escola', 'ano_escolar', 'ativo', 'motivo_inatividade'
             ),
             'classes': ('tab-informacoes-escolares',)
         })
@@ -469,7 +481,7 @@ class MetaHabilidadeAdmin(admin.ModelAdmin):
     
 class PDIMetaHabilidadeInline(admin.TabularInline):
     model = PDIMetaHabilidade
-    extra = 1
+    extra = 5
     min_num = 0
     can_delete = True
     fields = ('meta_habilidade', 'progresso')
@@ -676,6 +688,26 @@ class PDIAdmin(admin.ModelAdmin):
         return '-'
     get_responsavel.short_description = 'Responsável'
     
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Redireciona para a lista de PDIs do aluno após adicionar um novo PDI.
+        """
+        if obj and obj.neurodivergente:
+            # Redireciona para a lista de PDIs do aluno específico
+            redirect_url = f"{reverse('admin:neurodivergentes_pdi_changelist')}?neurodivergente__id__exact={obj.neurodivergente.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_add(request, obj, post_url_continue)
+    
+    def response_change(self, request, obj):
+        """
+        Redireciona para a lista de PDIs do aluno após editar um PDI.
+        """
+        if obj and obj.neurodivergente:
+            # Redireciona para a lista de PDIs do aluno específico
+            redirect_url = f"{reverse('admin:neurodivergentes_pdi_changelist')}?neurodivergente__id__exact={obj.neurodivergente.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_change(request, obj)
+    
     class Media:
         """
         Inclui arquivos CSS e JavaScript adicionais para customização.
@@ -703,13 +735,13 @@ class MonitoramentoAdmin(admin.ModelAdmin):
     
     def changelist_view(self, request, extra_context=None):
         """
-        Ajusta as colunas exibidas na listagem com base no contexto:
-        - Lista inicial: exibe agrupamento.
-        - Lista detalhada: exibe todos os PEIs do aluno.
+        Customiza a exibição da lista baseada nos parâmetros da URL.
+        Se estiver filtrando por um aluno específico, mostra a lista de PAEEs do aluno.
+        Caso contrário, mostra a lista geral de PAEEs.
         """
         self.request = request
         if 'neurodivergente__id__exact' in request.GET:
-            self.list_display = ['get_aluno_nome', 'get_mes_ano', 'get_metas', 'get_acoes']
+            self.list_display = ['get_aluno_nome', 'get_ano', 'get_metas', 'get_acoes']
         else:
             self.list_display = ['get_aluno_nome', 'get_idade_sexo', 'get_total_peis', 'get_ultimo_pei', 'get_view_button']
         return super().changelist_view(request, extra_context)
@@ -729,8 +761,7 @@ class MonitoramentoAdmin(admin.ModelAdmin):
         latest_peis = {}
         for pei in qs:
             if pei.neurodivergente_id not in latest_peis or (
-                pei.ano > latest_peis[pei.neurodivergente_id].ano or 
-                (pei.ano == latest_peis[pei.neurodivergente_id].ano and pei.mes > latest_peis[pei.neurodivergente_id].mes)
+                pei.ano > latest_peis[pei.neurodivergente_id].ano
             ):
                 latest_peis[pei.neurodivergente_id] = pei
         
@@ -748,17 +779,17 @@ class MonitoramentoAdmin(admin.ModelAdmin):
     def get_aluno_nome(self, obj):
         """
         Gera o link correto para o nome do aluno:
-        - Lista inicial: redireciona para a lista de PEIs do aluno.
-        - Lista filtrada: redireciona para o detalhe do PEI.
+        - Lista inicial: redireciona para a lista de PAEEs do aluno.
+        - Lista filtrada: redireciona para o detalhe do PAEE.
         """
         if not obj.neurodivergente:
             return '-'
 
         if hasattr(self, 'request') and 'neurodivergente__id__exact' not in self.request.GET:
-            # Link para a lista de PEIs do aluno
+            # Link para a lista de PAEEs do aluno
             url = f"{reverse('admin:neurodivergentes_monitoramento_changelist')}?neurodivergente__id__exact={obj.neurodivergente.id}"
         else:
-            # Link para o detalhe do PEI
+            # Link para o detalhe do PAEE
             url = reverse('admin:neurodivergentes_monitoramento_change', args=[obj.id])
 
         nome_completo = f"{obj.neurodivergente.primeiro_nome} {obj.neurodivergente.ultimo_nome}"
@@ -788,10 +819,10 @@ class MonitoramentoAdmin(admin.ModelAdmin):
             return '-'
         ultimo = Monitoramento.objects.filter(
             neurodivergente=obj.neurodivergente
-        ).order_by('-ano', '-mes').first()
+        ).order_by('-ano').first()
         
         if ultimo:
-            return f"{ultimo.get_mes_display()}/{ultimo.ano}"
+            return f"{ultimo.ano}"
         return '-'
     get_ultimo_pei.short_description = 'Último PEI'
 
@@ -802,21 +833,21 @@ class MonitoramentoAdmin(admin.ModelAdmin):
         """
         if request.GET.get('neurodivergente__id__exact'):
             # Na página de PEIs do aluno
-            return ['neurodivergente', 'get_mes_ano', 'get_metas', 'get_acoes']
+            return ['neurodivergente', 'get_ano', 'get_metas', 'get_acoes']
         # Na página inicial
         return ['get_aluno_nome', 'get_idade_sexo', 'get_total_peis', 'get_ultimo_pei', 'get_view_button']
 
-    def get_mes_ano(self, obj):
+    def get_ano(self, obj):
         """
-        Retorna o mês/ano formatado.
+        Retorna o ano formatado.
         """
-        return f"{obj.get_mes_display()}/{obj.ano}"
-    get_mes_ano.short_description = 'Mês/Ano'
-    get_mes_ano.admin_order_field = 'ano'
+        return f"{obj.ano}"
+    get_ano.short_description = 'Ano'
+    get_ano.admin_order_field = 'ano'
 
     def get_metas(self, obj):
         """
-        Retorna as metas do PEI.
+        Retorna as metas do PAEE.
         """
         return ", ".join([meta.nome for meta in obj.metas.all()])
     get_metas.short_description = 'Metas/Habilidades'
@@ -869,6 +900,26 @@ class MonitoramentoAdmin(admin.ModelAdmin):
         )
     get_idade_sexo.short_description = 'Idade/Sexo'
     get_idade_sexo.admin_order_field = 'neurodivergente__data_nascimento'
+    
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Redireciona para a lista de PDIs do aluno após adicionar um novo PDI.
+        """
+        if obj and obj.neurodivergente:
+            # Redireciona para a lista de PDIs do aluno específico
+            redirect_url = f"{reverse('admin:neurodivergentes_monitoramento_changelist')}?neurodivergente__id__exact={obj.neurodivergente.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_add(request, obj, post_url_continue)
+    
+    def response_change(self, request, obj):
+        """
+        Redireciona para a lista de PDIs do aluno após editar um PDI.
+        """
+        if obj and obj.neurodivergente:
+            # Redireciona para a lista de PDIs do aluno específico
+            redirect_url = f"{reverse('admin:neurodivergentes_monitoramento_changelist')}?neurodivergente__id__exact={obj.neurodivergente.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_change(request, obj)
     
     class Media:
         css = {
@@ -1041,6 +1092,26 @@ class RegistroEvolucaoAdmin(admin.ModelAdmin):
             url
         )
     get_edit_button.short_description = 'Editar'
+    
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Redireciona para a lista de Evoluções do aluno após adicionar uma nova Evolução.
+        """
+        if obj and obj.neurodivergente:
+            # Redireciona para a lista de Evoluções do aluno específico
+            redirect_url = f"{reverse('admin:neurodivergentes_registroevolucao_changelist')}?neurodivergente__id__exact={obj.neurodivergente.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_add(request, obj, post_url_continue)
+    
+    def response_change(self, request, obj):
+        """
+        Redireciona para a lista de Evoluções do aluno após editar uma Evolução.
+        """
+        if obj and obj.neurodivergente:
+            # Redireciona para a lista de Evoluções do aluno específico
+            redirect_url = f"{reverse('admin:neurodivergentes_registroevolucao_changelist')}?neurodivergente__id__exact={obj.neurodivergente.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_change(request, obj)
     
     class Media:
         css = {
@@ -1242,47 +1313,8 @@ class ParecerAvaliativoAdmin(admin.ModelAdmin):
     get_ultimo_parecer.short_description = 'Último Parecer'
 
     def save_model(self, request, obj, form, change):
-        # Processar as imagens dos gráficos se existirem
-        grafico_frequencia_base64 = request.POST.get('grafico_frequencia_base64')
-        grafico_monitoramento_base64 = request.POST.get('grafico_monitoramento_base64')
-        
-        # Salvar o modelo normalmente
+        # Processamento de gráficos temporariamente desabilitado para melhorar performance
         super().save_model(request, obj, form, change)
-        
-        if grafico_frequencia_base64 and grafico_frequencia_base64.startswith('data:image/png;base64,'):
-            # Remover o prefixo 'data:image/png;base64,'
-            image_data = grafico_frequencia_base64.split(',')[1]
-            # Decodificar a string base64
-            import base64
-            from django.core.files.base import ContentFile
-            
-            try:
-                image_binary = base64.b64decode(image_data)
-                # Criar um arquivo temporário
-                temp_file = ContentFile(image_binary)
-                # Salvar o arquivo no campo ImageField
-                filename = f'grafico_frequencia_{obj.id}.png'
-                obj.grafico_frequencia.save(filename, temp_file, save=True)
-            except Exception as e:
-                print(f"Erro ao salvar gráfico de frequência: {str(e)}")
-        
-        # Fazer o mesmo para o gráfico de monitoramento
-        if grafico_monitoramento_base64 and grafico_monitoramento_base64.startswith('data:image/png;base64,'):
-            # Remover o prefixo 'data:image/png;base64,'
-            image_data = grafico_monitoramento_base64.split(',')[1]
-            # Decodificar a string base64
-            import base64
-            from django.core.files.base import ContentFile
-            
-            try:
-                image_binary = base64.b64decode(image_data)
-                # Criar um arquivo temporário
-                temp_file = ContentFile(image_binary)
-                # Salvar o arquivo no campo ImageField
-                filename = f'grafico_monitoramento_{obj.id}.png'
-                obj.grafico_monitoramento.save(filename, temp_file, save=True)
-            except Exception as e:
-                print(f"Erro ao salvar gráfico de monitoramento: {str(e)}")
     
     def get_view_button(self, obj):
         if 'neurodivergente__id__exact' in self.request.GET:
@@ -1370,6 +1402,26 @@ class ParecerAvaliativoAdmin(admin.ModelAdmin):
         return bool(obj.anexos)
     tem_anexos.boolean = True
     tem_anexos.short_description = 'Anexos'
+    
+    def response_add(self, request, obj, post_url_continue=None):
+        """
+        Redireciona para a lista de Pareceres do aluno após adicionar um novo Parecer.
+        """
+        if obj and obj.neurodivergente:
+            # Redireciona para a lista de Pareceres do aluno específico
+            redirect_url = f"{reverse('admin:neurodivergentes_pareceravaliativo_changelist')}?neurodivergente__id__exact={obj.neurodivergente.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_add(request, obj, post_url_continue)
+    
+    def response_change(self, request, obj):
+        """
+        Redireciona para a lista de Pareceres do aluno após editar um Parecer.
+        """
+        if obj and obj.neurodivergente:
+            # Redireciona para a lista de Pareceres do aluno específico
+            redirect_url = f"{reverse('admin:neurodivergentes_pareceravaliativo_changelist')}?neurodivergente__id__exact={obj.neurodivergente.id}"
+            return HttpResponseRedirect(redirect_url)
+        return super().response_change(request, obj)
 
 #@admin.register(HistoricoEscolar)
 #class HistoricoEscolarAdmin(admin.ModelAdmin):

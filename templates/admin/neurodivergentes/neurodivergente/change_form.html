@@ -441,13 +441,26 @@
                             <span style="font-size: 14px; color: #344767; font-weight: 500; margin-left: 15px;">Inativo/Ativo</span>
                         </div>
                     </div>
-                    </div>
                     {% if adminform.form.fields.ativo.help_text %}
                         <div class="help-text">{{ adminform.form.fields.ativo.help_text|safe }}</div>
                     {% endif %}
                     {% if adminform.form.errors.ativo %}
                         <div class="alert alert-danger text-white mt-2 p-2">
                             {{ adminform.form.errors.ativo }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-12 mb-3">
+                <div class="form-group{% if adminform.form.fields.motivo_inatividade.required %} required{% endif %}">
+                    <label for="id_motivo_inatividade">{{ adminform.form.fields.motivo_inatividade.label }}</label>
+                    {{ adminform.form.motivo_inatividade }}
+                    {% if adminform.form.fields.motivo_inatividade.help_text %}
+                        <div class="help-text">{{ adminform.form.fields.motivo_inatividade.help_text|safe }}</div>
+                    {% endif %}
+                    {% if adminform.form.errors.motivo_inatividade %}
+                        <div class="alert alert-danger text-white mt-2 p-2">
+                            {{ adminform.form.errors.motivo_inatividade }}
                         </div>
                     {% endif %}
                 </div>

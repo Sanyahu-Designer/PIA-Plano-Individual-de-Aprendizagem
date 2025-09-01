@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'django_ckeditor_5',
     'realtime',
     'configuracoes',
+    'agendamento',
     'institucional',
 ]
 

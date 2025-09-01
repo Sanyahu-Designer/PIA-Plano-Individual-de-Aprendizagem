@@ -1,0 +1,1316 @@
+{% extends "admin/change_form_standard.html" %}
+{% load static i18n %}
+
+{% block title %}Agenda | {{ site_title|default:_('PIA') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+
+<!-- jQuery (necessário para o Select2) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Script de inicialização do Select2 -->
+<script src="{% static 'admin/js/select2_initializer.js' %}"></script>
+
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<!-- Estilos personalizados do Select2 -->
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/select2_custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/form_fields_style.css' %}">
+<!-- CSS padrão para páginas de edição -->
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/edit_form_standard.css' %}">
+
+<!-- FullCalendar CSS -->
+<style>
+/* FullCalendar CSS básico inline para evitar CORS */
+.fc { direction: ltr; text-align: left; }
+.fc table { border-collapse: collapse; border-spacing: 0; }
+.fc th, .fc td { border-style: solid; border-width: 1px; padding: 0; vertical-align: top; }
+.fc .fc-button { border: 1px solid #ccc; background: #f8f9fa; color: #212529; padding: 2px 6px; cursor: pointer; font-size: 0.65rem !important; min-height: 24px !important; }
+.fc .fc-button:hover { background: #e9ecef; }
+.fc .fc-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em; }
+.fc .fc-toolbar-title { font-size: 1.1rem; margin: 0; }
+.fc .fc-daygrid-day { min-height: 4em; }
+.fc .fc-event { border: 1px solid #3788d8; background: #3788d8; color: white; padding: 2px; margin: 1px; border-radius: 3px; }
+</style>
+
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+<!-- Flatpickr para compatibilidade cross-browser com datetime -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/pt.js"></script>
+<style>
+    /* Estilos específicos para reduzir tamanho dos elementos do calendário */
+    .fc .fc-toolbar-title {
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        color: #344767 !important;
+    }
+    
+    /* Forçar estilos compactos em todos os botões do FullCalendar */
+    .fc .fc-button,
+    .fc-button,
+    .fc-prev-button,
+    .fc-next-button,
+    .fc-today-button,
+    .fc-dayGridMonth-button,
+    .fc-timeGridWeek-button,
+    .fc-timeGridDay-button,
+    .fc-listWeek-button {
+        font-size: 0.7rem !important;
+        padding: 0.2rem 0.4rem !important;
+        min-height: 26px !important;
+        height: 26px !important;
+        line-height: 1.1 !important;
+        border-radius: 0.25rem !important;
+    }
+    
+    .fc-button-primary {
+        background-color: #e91e63 !important;
+        border-color: #e91e63 !important;
+        color: white !important;
+    }
+    
+    .fc-button-primary:hover {
+        background-color: #d81557 !important;
+        border-color: #d81557 !important;
+    }
+    
+    .fc-button-primary:disabled {
+        background-color: #8392ab !important;
+        border-color: #8392ab !important;
+    }
+    
+    .fc-event {
+        border-radius: 4px !important;
+        font-size: 10px !important;
+        padding: 2px 4px !important;
+    }
+    
+    /* Estilos específicos para o texto dos eventos */
+    .fc-event-title {
+        font-size: 10px !important;
+        line-height: 1.2 !important;
+    }
+    
+    .fc-daygrid-event .fc-event-title {
+        font-size: 10px !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        hyphens: auto !important;
+    }
+    
+    /* Aumentar altura dos eventos para acomodar múltiplas linhas */
+    .fc-daygrid-event {
+        min-height: auto !important;
+        height: auto !important;
+        padding: 2px 4px !important;
+    }
+    
+    /* Ajustar altura das células do dia para acomodar eventos maiores */
+    .fc-daygrid-day-frame {
+        min-height: 60px !important;
+    }
+    
+    .calendar-container {
+        /* Usar classe fieldset-container do padrão */
+    }
+    
+    /* Remover estilos customizados do botão - usar padrão do sistema */
+    
+    /* ===== RESPONSIVIDADE COMPLETA ===== */
+    
+    /* Mobile First - Smartphones (até 576px) */
+    @media (max-width: 575.98px) {
+        .fc-toolbar {
+            flex-direction: column !important;
+            gap: 0.5rem;
+        }
+        
+        .fc-toolbar-title {
+            font-size: 1.2rem !important;
+            text-align: center;
+        }
+        
+        .fc-button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+        
+        .fc-button {
+            font-size: 0.75rem !important;
+            padding: 0.25rem 0.5rem !important;
+        }
+        
+        .calendar-container {
+            padding: 0.75rem;
+            margin: 0.5rem;
+        }
+        
+        .agenda-header {
+            padding: 0.75rem;
+            margin: -0.75rem -0.75rem 0.75rem -0.75rem;
+        }
+        
+        .btn-criar-agendamento {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        .fc-daygrid-day {
+            min-height: 3em !important;
+        }
+        
+        .fc-event {
+            font-size: 10px !important;
+            padding: 1px 2px !important;
+        }
+        
+        /* Modais em mobile */
+        .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100% - 1rem);
+        }
+        
+        .modal-body {
+            padding: 1rem;
+        }
+        
+        .row .col-md-6 {
+            margin-bottom: 1rem;
+        }
+    }
+    
+    /* Tablets (576px a 991.98px) */
+    @media (min-width: 576px) and (max-width: 991.98px) {
+        .fc-toolbar-title {
+            font-size: 1.3rem !important;
+        }
+        
+        .fc-button {
+            font-size: 0.85rem !important;
+            padding: 0.4rem 0.8rem !important;
+        }
+        
+        .calendar-container {
+            padding: 1.25rem;
+        }
+        
+        .fc-daygrid-day {
+            min-height: 3.5em !important;
+        }
+        
+        .modal-dialog {
+            max-width: 90%;
+        }
+    }
+    
+    /* Desktop (992px a 1399.98px) */
+    @media (min-width: 992px) and (max-width: 1399.98px) {
+        .fc-toolbar-title {
+            font-size: 1.5rem !important;
+        }
+        
+        .calendar-container {
+            padding: 1.5rem;
+        }
+        
+        .fc-daygrid-day {
+            min-height: 4em !important;
+        }
+    }
+    
+    /* TVs e Telas Grandes (1400px+) */
+    @media (min-width: 1400px) {
+        .fc-toolbar-title {
+            font-size: 2rem !important;
+            font-weight: 700 !important;
+        }
+        
+        .fc-button {
+            font-size: 1rem !important;
+            padding: 0.6rem 1.2rem !important;
+        }
+        
+        .calendar-container {
+            padding: 2rem;
+            margin: 1.5rem;
+        }
+        
+        .agenda-header {
+            padding: 1.5rem 2rem;
+        }
+        
+        /* Usar estilos padrão do sistema para botões */
+        
+        .fc-daygrid-day {
+            min-height: 5em !important;
+        }
+        
+        .fc-event {
+            font-size: 14px !important;
+            padding: 4px 6px !important;
+        }
+        
+        /* Modais maiores para TVs */
+        .modal-dialog {
+            max-width: 60%;
+        }
+        
+        .modal-body {
+            padding: 2rem;
+        }
+        
+        .modal .form-control, .modal .form-select {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
+            height: calc(1.5em + 1rem + 2px);
+        }
+        
+        .modal .btn {
+            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+        }
+    }
+    
+    /* Ultra Wide e 4K (1920px+) */
+    @media (min-width: 1920px) {
+        .fc-toolbar-title {
+            font-size: 2.5rem !important;
+        }
+        
+        .fc-button {
+            font-size: 1.2rem !important;
+            padding: 0.8rem 1.5rem !important;
+        }
+        
+        .calendar-container {
+            padding: 3rem;
+            margin: 2rem;
+        }
+        
+        .fc-daygrid-day {
+            min-height: 6em !important;
+        }
+        
+        .fc-event {
+            font-size: 16px !important;
+            padding: 6px 8px !important;
+        }
+        
+        .modal-dialog {
+            max-width: 50%;
+        }
+        
+        .modal .form-control, .modal .form-select {
+            font-size: 1rem;
+            padding: 0.625rem 1rem;
+            height: calc(1.5em + 1.25rem + 2px);
+        }
+    }
+    
+    /* Orientação paisagem em mobile */
+    @media (max-width: 991.98px) and (orientation: landscape) {
+        .fc-toolbar {
+            flex-direction: row !important;
+        }
+        
+        .fc-toolbar-title {
+            font-size: 1rem !important;
+        }
+        
+        .fc-button {
+            font-size: 0.7rem !important;
+            padding: 0.2rem 0.4rem !important;
+        }
+        
+        .fc-daygrid-day {
+            min-height: 2.5em !important;
+        }
+    }
+    
+    /* Ajustes gerais para melhor responsividade */
+    .fc {
+        width: 100% !important;
+    }
+    
+    .fc-scrollgrid {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+    }
+    
+    .fc-col-header-cell {
+        font-weight: 600 !important;
+        background-color: #f8f9fa !important;
+    }
+    
+    /* Modal customizado */
+    .modal-content {
+        border-radius: 0.75rem;
+        border: none;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    }
+    
+    .modal-header {
+        background: linear-gradient(to right, #6c757d, #8d99ae);
+        color: white !important;
+        border-radius: 0.75rem 0.75rem 0 0;
+        border-bottom: none;
+    }
+    
+    .modal-header h5,
+    .modal-header .modal-title,
+    .modal-header i,
+    .modal-header .btn-close {
+        color: white !important;
+    }
+    
+    .modal-header .btn-close-white {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+    
+    .modal .form-control, .modal .form-select {
+        border-radius: 0.5rem;
+        border: 1px solid #d2d6da;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        height: calc(1.5em + 0.75rem + 2px);
+    }
+    
+    .modal .form-control:focus, .modal .form-select:focus {
+        border-color: #e91e63;
+        box-shadow: 0 0 0 0.2rem rgba(233, 30, 99, 0.25);
+    }
+    
+    .modal .select2-container--default .select2-selection--single {
+        border: 1px solid #d2d6da !important;
+        border-radius: 0.5rem !important;
+        height: calc(1.5em + 0.75rem + 2px) !important;
+        min-height: 38px !important;
+    }
+    
+    .modal .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 1.5 !important;
+        padding: 0.375rem 0.75rem !important;
+        font-size: 0.875rem !important;
+    }
+    
+    .modal .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: calc(1.5em + 0.75rem + 2px) !important;
+    }
+    
+    .modal .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #e91e63 !important;
+        box-shadow: 0 0 0 0.2rem rgba(233, 30, 99, 0.25) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Container para alertas -->
+<div id="alert-container" class="container-fluid py-0"></div>
+
+<div class="container-fluid py-2">
+    <div class="fieldset-container">
+        <h5 class="text-dark mb-3">
+            <i class="material-symbols-rounded opacity-10 me-2">calendar_month</i>
+            Agenda
+        </h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="mb-0 text-secondary">Gerencie seus agendamentos e compromissos</p>
+            <button type="button" class="btn btn-primary mb-0" data-bs-toggle="modal" data-bs-target="#modalAgendamento">
+                <i class="material-symbols-rounded opacity-10 me-2">add</i>
+                Criar Agendamento
+            </button>
+        </div>
+        
+        <!-- Calendário -->
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- Modal para Criar/Editar Agendamento -->
+<div class="modal fade" id="modalAgendamento" tabindex="-1" aria-labelledby="modalAgendamentoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                <div class="shadow-dark border-radius-lg pt-4 pb-3" style="background: linear-gradient(to right, #6c757d, #8d99ae); width: 100%;">
+                    <h6 class="text-white text-capitalize ps-3 mb-0" id="agendamentoModalLabel">Criar Agendamento</h6>
+                </div>
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 mt-3 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAgendamento">
+                    <input type="hidden" id="agendamentoId" name="agendamentoId" value="">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="profissional" class="form-label">Profissional</label>
+                            <select class="form-select" id="profissional" name="profissional_id">
+                                <option value="">Selecione um profissional (opcional)</option>
+                                {% for prof in profissionais %}
+                                    <option value="{{ prof.id }}">{{ prof.user.get_full_name|default:prof.user.username }} - {{ prof.get_profissao_display|default:"Profissional" }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="paciente" class="form-label">Aluno/Paciente</label>
+                            <select class="form-select" id="paciente" name="neurodivergente_id">
+                                <option value="">Selecione um aluno/paciente (opcional)</option>
+                                {% for paciente in pacientes %}
+                                    <option value="{{ paciente.id }}">{{ paciente.nome_completo }} - {{ paciente.escola.nome|default:"Sem escola" }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="dataHora" class="form-label">Data e Hora</label>
+                            <input type="text" class="form-control" id="dataHora" name="data_hora_inicio" placeholder="Selecione data e hora">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="duracao" class="form-label">Duração</label>
+                            <select class="form-select" id="duracao" name="duracao">
+                                <option value="15">15 minutos</option>
+                                <option value="30">30 minutos</option>
+                                <option value="45" selected>45 minutos</option>
+                                <option value="60">1 hora</option>
+                                <option value="90">1h30</option>
+                                <option value="120">2 horas</option>
+                                <option value="480">Dia inteiro</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="mb-3">
+                        <label for="descricao" class="form-label">Descrição Curta</label>
+                        <input type="text" class="form-control" id="descricao" name="descricao" maxlength="255" placeholder="Breve descrição do agendamento">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="observacoes" class="form-label">Observações</label>
+                        <textarea class="form-control" id="observacoes" name="observacoes" rows="3" placeholder="Observações adicionais (opcional)"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="recorrencia" class="form-label">Recorrência</label>
+                            <select class="form-select" id="recorrencia" name="recorrencia">
+                                <option value="">Sem recorrência</option>
+                                <option value="semanal">Semanal</option>
+                                <option value="quinzenal">Quinzenal</option>
+                                <option value="mensal">Mensal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                            <!-- Enviar cópia para Secretaria -->
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="enviar_copia_gestor" name="enviar_copia_gestor">
+                                <label class="form-check-label" for="enviar_copia_gestor">
+                                    Enviar cópia para Secretaria
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="material-symbols-rounded opacity-10 me-1">close</i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="btnSalvarAgendamento">
+                    <i class="material-symbols-rounded opacity-10 me-1">save</i>
+                    <span id="btnSalvarText">Salvar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Visualizar Detalhes -->
+<div class="modal fade" id="modalDetalhes" tabindex="-1" aria-labelledby="modalDetalhesLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalhesLabel">
+                    <i class="material-symbols-rounded opacity-10 me-2">info</i>
+                    Detalhes do Agendamento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="detalhesContent">
+                <!-- Conteúdo será preenchido via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" id="btnEditarAgendamento" style="display: none;">
+                    <i class="material-symbols-rounded opacity-10 me-1">edit</i>
+                    Editar
+                </button>
+                <button type="button" class="btn btn-outline-danger" id="btnExcluirAgendamento" style="display: none;">
+                    <i class="material-symbols-rounded opacity-10 me-1">delete</i>
+                    Excluir
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="material-symbols-rounded opacity-10 me-1">close</i>
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalExclusao" tabindex="-1" aria-labelledby="modalExclusaoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-danger">
+                <h5 class="modal-title text-white" id="modalExclusaoLabel">
+                    <i class="material-symbols-rounded opacity-10 me-2">warning</i>
+                    Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="material-symbols-rounded text-danger mb-3" style="font-size: 4rem;">delete_forever</i>
+                    <h6 class="mb-3">Tem certeza que deseja excluir este agendamento?</h6>
+                    <div id="dadosExclusao" class="text-muted small">
+                        <!-- Dados do agendamento serão preenchidos aqui -->
+                    </div>
+                    <div class="alert alert-warning mt-3" role="alert">
+                        <i class="material-symbols-rounded me-2">info</i>
+                        <strong>Atenção:</strong> Esta ação não pode ser desfeita.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="material-symbols-rounded opacity-10 me-1">close</i>
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-danger" id="btnConfirmarExclusao">
+                    <i class="material-symbols-rounded opacity-10 me-1">delete</i>
+                    Excluir Agendamento
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let calendar;
+    let agendamentoAtual = null;
+    
+    // Inicializa o calendário
+    initCalendar();
+    
+    // Event listeners
+    setupEventListeners();
+    
+    // Inicializar Select2 na primeira carga da página
+    setTimeout(() => {
+        initSelect2();
+        initDateTimePicker();
+    }, 500);
+    
+    function initCalendar() {
+        const calendarEl = document.getElementById('calendar');
+        
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+            },
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                day: 'Dia',
+                list: 'Lista'
+            },
+            moreLinkText: function(num) {
+                return '+' + num + ' ver mais';
+            },
+            height: 'auto',
+            events: '{% url "agendamento:eventos_api" %}',
+            eventClick: function(info) {
+                // Fechar qualquer popover aberto
+                document.querySelectorAll('.fc-popover').forEach(function(popover) {
+                    popover.remove();
+                });
+                mostrarDetalhes(info.event);
+            },
+            dateClick: function(info) {
+                criarAgendamento(info.dateStr);
+            },
+            // Configurações específicas para view de dia
+            dayMaxEvents: 2,
+            dayMaxEventRows: 2,
+            eventDisplay: 'block',
+            eventMinHeight: 25,
+            slotMinTime: '06:00:00',
+            slotMaxTime: '22:00:00',
+            allDaySlot: false,
+            eventDidMount: function(info) {
+                // Adiciona tooltip
+                info.el.setAttribute('title', info.event.title);
+            }
+        });
+        
+        calendar.render();
+    }
+    
+    function initSelect2() {
+        console.log('Inicializando Select2 para agendamento...');
+        
+        // Forçar reinicialização ignorando flag global
+        window.select2AlreadyInitialized = false;
+        
+        // Destruir APENAS instâncias Select2 válidas para evitar erros
+        $('.select2-hidden-accessible').each(function() {
+            try {
+                if ($(this).data('select2')) {
+                    $(this).select2('destroy');
+                }
+            } catch (e) {
+                console.log('Erro ao destruir Select2:', e);
+            }
+        });
+        
+        // Limpar qualquer elemento Select2 órfão
+        $('.select2-container').remove();
+        $('.select2-dropdown').remove();
+        
+        // Aguardar limpeza completa
+        setTimeout(() => {
+            // Verificar se os elementos ainda existem
+            const pacienteEl = document.getElementById('paciente');
+            const profissionalEl = document.getElementById('profissional');
+            
+            if (!pacienteEl || !profissionalEl) {
+                console.error('Elementos select não encontrados');
+                return;
+            }
+        
+            // Verificar se jQuery e Select2 estão disponíveis
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                // Inicializar Select2 com busca habilitada nos dados já carregados
+                $('#paciente').select2({
+                    placeholder: 'Selecione um aluno/paciente (opcional)',
+                    allowClear: true,
+                    width: '100%',
+                    minimumInputLength: 0,
+                    dropdownParent: $('#modalAgendamento'),
+                    closeOnSelect: true,
+                    language: {
+                        noResults: function() {
+                            return "Nenhum resultado encontrado";
+                        },
+                        searching: function() {
+                            return "Buscando...";
+                        }
+                    }
+                });
+                
+                $('#profissional').select2({
+                    placeholder: 'Selecione um profissional (opcional)',
+                    allowClear: true,
+                    width: '100%',
+                    minimumInputLength: 0,
+                    dropdownParent: $('#modalAgendamento'),
+                    closeOnSelect: true,
+                    language: {
+                        noResults: function() {
+                            return "Nenhum resultado encontrado";
+                        },
+                        searching: function() {
+                            return "Buscando...";
+                        }
+                    }
+                });
+                
+                // Inicializar Select2 para campos de seleção simples
+                $('#duracao').select2({
+                    placeholder: 'Selecione a duração',
+                    allowClear: false,
+                    width: '100%',
+                    minimumResultsForSearch: Infinity, // Desabilitar busca para poucos itens
+                    dropdownParent: $('#modalAgendamento')
+                });
+                
+                $('#recorrencia').select2({
+                    placeholder: 'Selecione a recorrência (opcional)',
+                    allowClear: true,
+                    width: '100%',
+                    minimumResultsForSearch: Infinity, // Desabilitar busca para poucos itens
+                    dropdownParent: $('#modalAgendamento')
+                });
+                
+                console.log('Select2 inicializado com sucesso!');
+                
+                // Aplicar estilos CSS específicos após inicialização
+                setTimeout(() => {
+                    // Aplicar estilos do padrão do sistema
+                    $('.select2-container--default .select2-selection--single').css({
+                        'border': '1px solid #d2d6da !important',
+                        'border-radius': '0.5rem !important',
+                        'min-height': '38px !important',
+                        'padding': '0.25rem 0.5rem !important'
+                    });
+                    
+                    $('.select2-container--default .select2-selection--single .select2-selection__rendered').css({
+                        'line-height': '36px',
+                        'padding-left': '0.5rem'
+                    });
+                    
+                    $('.select2-container--default .select2-selection--single .select2-selection__arrow').css({
+                        'height': '36px'
+                    });
+                    
+                    $('.select2-dropdown').css({
+                        'border': '1px solid #d2d6da !important',
+                        'border-radius': '0.5rem !important',
+                        'box-shadow': '0 4px 6px -1px rgba(0, 0, 0, 0.1) !important',
+                        'z-index': '9999 !important'
+                    });
+                    
+                    $('.select2-search__field').css({
+                        'border': '1px solid #d2d6da !important',
+                        'border-radius': '0.5rem !important',
+                        'padding': '0.5rem !important',
+                        'pointer-events': 'auto !important'
+                    });
+                    
+                    $('.select2-container').css({
+                        'width': '100% !important',
+                        'z-index': '1050 !important'
+                    });
+                    
+                    // Garantir que o campo de pesquisa seja clicável
+                    $('.select2-search--dropdown').css({
+                        'pointer-events': 'auto !important'
+                    });
+                    
+                    $('.select2-search--dropdown .select2-search__field').css({
+                        'pointer-events': 'auto !important',
+                        'cursor': 'text !important'
+                    });
+                }, 100);
+            } else {
+                console.error('jQuery ou Select2 não disponível');
+            }
+        }, 50);
+    }
+    
+    function initDateTimePicker() {
+        // Inicializar Flatpickr para compatibilidade cross-browser
+        if (typeof flatpickr !== 'undefined') {
+            flatpickr("#dataHora", {
+                enableTime: true,
+                dateFormat: "d/m/Y H:i",
+                time_24hr: true,
+                locale: "pt",
+                minDate: "today",
+                defaultHour: 9,
+                defaultMinute: 0,
+                minuteIncrement: 15,
+                allowInput: true,
+                clickOpens: true,
+                onChange: function(selectedDates, dateStr, instance) {
+                    console.log("Data selecionada:", dateStr);
+                }
+            });
+        }
+    }
+    
+    function setupEventListeners() {
+        
+        function resetForm() {
+            // Destruir Select2 existentes antes de resetar com verificação segura
+            try {
+                if ($('#paciente').data('select2')) {
+                    $('#paciente').select2('destroy');
+                }
+            } catch (e) {
+                console.log('Erro ao destruir Select2 do paciente:', e);
+            }
+            
+            try {
+                if ($('#profissional').data('select2')) {
+                    $('#profissional').select2('destroy');
+                }
+            } catch (e) {
+                console.log('Erro ao destruir Select2 do profissional:', e);
+            }
+            
+            try {
+                if ($('#duracao').data('select2')) {
+                    $('#duracao').select2('destroy');
+                }
+            } catch (e) {
+                console.log('Erro ao destruir Select2 da duração:', e);
+            }
+            
+            try {
+                if ($('#recorrencia').data('select2')) {
+                    $('#recorrencia').select2('destroy');
+                }
+            } catch (e) {
+                console.log('Erro ao destruir Select2 da recorrência:', e);
+            }
+            
+            document.getElementById('formAgendamento').reset();
+            document.getElementById('agendamentoId').value = '';
+            
+            // Restaurar options originais dos selects (preservando dados do backend)
+            const pacienteSelect = document.getElementById('paciente');
+            const profissionalSelect = document.getElementById('profissional');
+            
+            // Resetar seleções mantendo as opções
+            pacienteSelect.value = '';
+            profissionalSelect.value = '';
+            
+            // Restaurar HTML original com todas as opções do backend
+            pacienteSelect.innerHTML = `
+                <option value="">Selecione um aluno/paciente (opcional)</option>
+                {% for paciente in pacientes %}
+                    <option value="{{ paciente.id }}">{{ paciente.nome_completo }} - {{ paciente.escola.nome|default:"Sem escola" }}</option>
+                {% endfor %}
+            `;
+            
+            profissionalSelect.innerHTML = `
+                <option value="">Selecione um profissional (opcional)</option>
+                {% for prof in profissionais %}
+                    <option value="{{ prof.id }}">{{ prof.user.get_full_name|default:prof.user.username }} - {{ prof.get_profissao_display|default:"Profissional" }}</option>
+                {% endfor %}
+            `;
+        }
+
+        function configurarPermissoesProfissional() {
+            const isAdmin = {{ user.is_superuser|yesno:"true,false" }};
+            const isStaff = {{ user.is_staff|yesno:"true,false" }};
+            
+            const profissionalSelect = document.getElementById('profissional');
+            const profissionalContainer = profissionalSelect.closest('.col-md-6');
+            
+            // Se é admin, gestor ou root - campo editável
+            if (isAdmin || isStaff) {
+                profissionalSelect.disabled = false;
+                if (profissionalContainer) {
+                    profissionalContainer.style.opacity = '1';
+                }
+            } else {
+                // Se é profissional - campo bloqueado e pré-selecionado
+                profissionalSelect.disabled = true;
+                if (profissionalContainer) {
+                    profissionalContainer.style.opacity = '0.6';
+                }
+                
+                // Pré-selecionar o profissional logado
+                {% if user.profissional %}
+                const option = new Option('{{ user.profissional.user.get_full_name }}', '{{ user.profissional.id }}', true, true);
+                profissionalSelect.appendChild(option);
+                {% endif %}
+            }
+        }
+        
+        // Salvar agendamento - garantir que o event listener seja adicionado
+        const btnSalvar = document.getElementById('btnSalvarAgendamento');
+        if (btnSalvar) {
+            btnSalvar.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Botão salvar clicado');
+                salvarAgendamento();
+            });
+        } else {
+            console.error('Botão salvar não encontrado');
+        }
+        
+        // Editar agendamento
+        document.getElementById('btnEditarAgendamento').addEventListener('click', function() {
+            if (agendamentoAtual) {
+                // Fechar modal de detalhes antes de abrir modal de edição
+                const modalDetalhes = bootstrap.Modal.getInstance(document.getElementById('modalDetalhes'));
+                if (modalDetalhes) {
+                    modalDetalhes.hide();
+                }
+                
+                // Aguardar modal fechar antes de abrir o de edição
+                setTimeout(() => {
+                    editarAgendamento(agendamentoAtual);
+                }, 300);
+            }
+        });
+        
+        // Excluir agendamento
+        document.getElementById('btnExcluirAgendamento').addEventListener('click', function() {
+            if (agendamentoAtual) {
+                mostrarModalExclusao(agendamentoAtual);
+            }
+        });
+        
+        // Reset modal ao fechar
+        document.getElementById('modalAgendamento').addEventListener('hidden.bs.modal', function() {
+            resetForm();
+        });
+        
+        // Reinicializar Select2 quando modal abrir
+        document.getElementById('modalAgendamento').addEventListener('shown.bs.modal', function() {
+            console.log('Modal aberto, reinicializando Select2...');
+            setTimeout(() => {
+                initSelect2();
+                initDateTimePicker();
+            }, 200);
+        });
+    }
+    
+    function criarAgendamento(dateStr = null) {
+        resetForm();
+        document.getElementById('agendamentoModalLabel').textContent = 'Criar Agendamento';
+        document.getElementById('btnSalvarText').textContent = 'Salvar';
+        
+        if (dateStr) {
+            const date = new Date(dateStr + 'T09:00:00');
+            // Formato para Flatpickr: dd/mm/yyyy HH:MM
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const flatpickrFormat = `${day}/${month}/${year} ${hours}:${minutes}`;
+            document.getElementById('dataHora').value = flatpickrFormat;
+        }
+        
+        // Configurar permissões do campo profissional
+        if (typeof configurarPermissoesProfissional === 'function') {
+            configurarPermissoesProfissional();
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalAgendamento'));
+        
+        // Aguardar o modal abrir completamente antes de inicializar Select2
+        document.getElementById('modalAgendamento').addEventListener('shown.bs.modal', function() {
+            // Inicializar Select2 após o modal estar totalmente visível
+            setTimeout(() => {
+                initSelect2();
+            }, 100);
+        }, { once: true });
+        
+        modal.show();
+    }
+    
+    function editarAgendamento(evento) {
+        resetForm();
+        document.getElementById('agendamentoModalLabel').textContent = 'Editar Agendamento';
+        document.getElementById('btnSalvarText').textContent = 'Atualizar';
+        
+        // Preencher campos ANTES de abrir o modal para evitar tremulação
+        document.getElementById('agendamentoId').value = evento.id;
+        
+        // Corrigir horário considerando fuso horário local
+        const dataEvento = new Date(evento.start);
+        const dataLocal = new Date(dataEvento.getTime() - (dataEvento.getTimezoneOffset() * 60000));
+        // Formato para Flatpickr: dd/mm/yyyy HH:MM
+        const day = String(dataLocal.getDate()).padStart(2, '0');
+        const month = String(dataLocal.getMonth() + 1).padStart(2, '0');
+        const year = dataLocal.getFullYear();
+        const hours = String(dataLocal.getHours()).padStart(2, '0');
+        const minutes = String(dataLocal.getMinutes()).padStart(2, '0');
+        const flatpickrFormat = `${day}/${month}/${year} ${hours}:${minutes}`;
+        document.getElementById('dataHora').value = flatpickrFormat;
+        
+        document.getElementById('duracao').value = evento.extendedProps.duracao || '60';
+        document.getElementById('descricao').value = evento.extendedProps.descricao || '';
+        document.getElementById('observacoes').value = evento.extendedProps.observacoes || '';
+        const enviarCopiaEl = document.getElementById('enviar_copia_gestor');
+        if (enviarCopiaEl) {
+            enviarCopiaEl.checked = evento.extendedProps.enviar_copia || false;
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalAgendamento'));
+        
+        // Aguardar o modal abrir completamente antes de inicializar Select2
+        document.getElementById('modalAgendamento').addEventListener('shown.bs.modal', function() {
+            // Inicializar Select2 após o modal estar totalmente visível
+            setTimeout(() => {
+                initSelect2();
+                
+                // Preencher Select2 após inicialização
+                setTimeout(() => {
+                    // Preencher Select2 do paciente se existir
+                    if (evento.extendedProps.paciente_id) {
+                        $('#paciente').val(evento.extendedProps.paciente_id).trigger('change');
+                    }
+                    
+                    // Preencher Select2 do profissional se existir
+                    if (evento.extendedProps.profissional_id) {
+                        $('#profissional').val(evento.extendedProps.profissional_id).trigger('change');
+                    }
+                    
+                    // Configurar permissões do campo profissional
+                    if (typeof configurarPermissoesProfissional === 'function') {
+                        configurarPermissoesProfissional();
+                    }
+                }, 50);
+            }, 100);
+        }, { once: true });
+        
+        modal.show();
+    }
+    
+    function mostrarDetalhes(evento) {
+        agendamentoAtual = evento;
+        
+        const detalhes = `
+            <div class="row">
+                <div class="col-sm-4"><strong>Profissional:</strong></div>
+                <div class="col-sm-8">${evento.extendedProps.profissional || '-'}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-sm-4"><strong>Paciente:</strong></div>
+                <div class="col-sm-8">${evento.extendedProps.paciente || '-'}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-sm-4"><strong>Data/Hora:</strong></div>
+                <div class="col-sm-8">${evento.start ? evento.start.toLocaleString('pt-BR', {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}) : '-'}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-sm-4"><strong>Descrição:</strong></div>
+                <div class="col-sm-8">${evento.extendedProps.descricao || '-'}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-sm-4"><strong>Observações:</strong></div>
+                <div class="col-sm-8">${evento.extendedProps.observacoes || '-'}</div>
+            </div>
+        `;
+        
+        document.getElementById('detalhesContent').innerHTML = detalhes;
+        
+        // Controla visibilidade dos botões baseado nas permissões
+        const btnEditar = document.getElementById('btnEditarAgendamento');
+        const btnExcluir = document.getElementById('btnExcluirAgendamento');
+        
+        if (evento.extendedProps.can_edit) {
+            btnEditar.style.display = 'inline-block';
+        } else {
+            btnEditar.style.display = 'none';
+        }
+        
+        if (evento.extendedProps.can_delete) {
+            btnExcluir.style.display = 'inline-block';
+        } else {
+            btnExcluir.style.display = 'none';
+        }
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+        modal.show();
+        
+        // Adicionar listener para reinicializar Select2 quando este modal fechar
+        document.getElementById('modalDetalhes').addEventListener('hidden.bs.modal', function() {
+            // Forçar reinicialização do Select2 após fechar modal de detalhes
+            setTimeout(() => {
+                initSelect2();
+            }, 100);
+        }, { once: true });
+    }
+    
+    function salvarAgendamento() {
+        const form = document.getElementById('formAgendamento');
+        const formData = new FormData(form);
+        
+        const data = {};
+        for (let [key, value] of formData.entries()) {
+            if (value !== '') {
+                data[key] = value;
+            }
+        }
+        
+        // Converte checkbox - usar o ID correto
+        const enviarCopiaElement = document.getElementById('enviar_copia_gestor');
+        data.enviar_copia = enviarCopiaElement ? enviarCopiaElement.checked : false;
+        
+        // Determinar se é edição ou criação baseado no campo agendamentoId
+        const agendamentoId = document.getElementById('agendamentoId').value;
+        const isEdit = agendamentoId && agendamentoId !== '';
+        
+        const url = isEdit ? 
+            `/agendamento/api/editar/${agendamentoId}/` : 
+            '{% url "agendamento:criar_api" %}';
+        
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                calendar.refetchEvents();
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalAgendamento'));
+                if (modal) {
+                    modal.hide();
+                }
+                showAlert('success', data.message);
+                resetForm();
+                
+                // Reinicializar Select2 após fechar modal para manter funcionalidade
+                setTimeout(() => {
+                    initSelect2();
+                }, 500);
+            } else {
+                showAlert('error', data.error || 'Erro ao salvar agendamento');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            showAlert('error', 'Erro de conexão');
+        });
+    }
+    
+    function mostrarModalExclusao(evento) {
+        // Preencher dados do agendamento no modal
+        const dadosHtml = `
+            <div class="mb-2"><strong>Profissional:</strong> ${evento.extendedProps.profissional || '-'}</div>
+            <div class="mb-2"><strong>Paciente:</strong> ${evento.extendedProps.paciente || '-'}</div>
+            <div class="mb-2"><strong>Data/Hora:</strong> ${evento.start ? evento.start.toLocaleString('pt-BR', {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}) : '-'}</div>
+            <div class="mb-2"><strong>Descrição:</strong> ${evento.extendedProps.descricao || '-'}</div>
+        `;
+        
+        document.getElementById('dadosExclusao').innerHTML = dadosHtml;
+        
+        // Configurar botão de confirmação
+        const btnConfirmar = document.getElementById('btnConfirmarExclusao');
+        btnConfirmar.onclick = function() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalExclusao'));
+            modal.hide();
+            
+            // Fechar modal de detalhes também
+            const modalDetalhes = bootstrap.Modal.getInstance(document.getElementById('modalDetalhes'));
+            if (modalDetalhes) {
+                modalDetalhes.hide();
+            }
+            
+            excluirAgendamento(evento.id);
+        };
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+        modal.show();
+    }
+    
+    function excluirAgendamento(agendamentoId) {
+        fetch(`/agendamento/api/excluir/${agendamentoId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                calendar.refetchEvents();
+                showAlert('success', data.message);
+            } else {
+                showAlert('error', data.error || 'Erro ao excluir agendamento');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            showAlert('error', 'Erro de conexão');
+        });
+    }
+
+function showAlert(type, message) {
+    // Implementar sistema de alertas
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Adiciona o alerta no container específico
+    const alertContainer = document.getElementById('alert-container');
+    if (alertContainer) {
+        alertContainer.innerHTML = alertHtml;
+    }
+}
+    
+    function resetForm() {
+        document.getElementById('formAgendamento').reset();
+        $('#paciente').val(null).trigger('change');
+        $('#profissional').val(null).trigger('change');
+        const duracaoRow = document.getElementById('duracaoPersonalizadaRow');
+        if (duracaoRow) {
+            duracaoRow.style.display = 'none';
+        }
+        agendamentoAtual = null;
+    }
+    
+    function showAlert(type, message) {
+        // Implementar sistema de alertas
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        // Adiciona o alerta no container específico
+        const alertContainer = document.getElementById('alert-container');
+        if (alertContainer) {
+            alertContainer.innerHTML = alertHtml;
+            
+            // Remove o alerta após 5 segundos
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

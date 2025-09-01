@@ -327,10 +327,6 @@
             </div>
             <div class="info-row">
                 <div class="info-item">
-                    <div class="info-label">Naturalidade</div>
-                    <div class="info-value">{{ aluno.cidade_nascimento }} - {{ aluno.get_estado_nascimento_display }}</div>
-                </div>
-                <div class="info-item">
                     <div class="info-label">Status</div>
                     <div class="info-value">
                         <span class="badge {% if aluno.ativo %}badge-green{% else %}badge-red{% endif %}">
@@ -339,6 +335,14 @@
                     </div>
                 </div>
             </div>
+            {% if not aluno.ativo and aluno.motivo_inatividade %}
+            <div class="info-row">
+                <div class="info-item" style="flex: 1; min-width: 100%;">
+                    <div class="info-label">Motivo da Inatividade</div>
+                    <div class="info-value">{{ aluno.motivo_inatividade }}</div>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <div class="section">
@@ -347,6 +351,10 @@
                 <div class="info-item">
                     <div class="info-label">Nacionalidade</div>
                     <div class="info-value">{{ aluno.get_nacionalidade_display|default:"-" }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Naturalidade</div>
+                    <div class="info-value">{{ aluno.naturalidade|default:"Não informado" }}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">País de Origem</div>
@@ -406,7 +414,7 @@
                 </div>
                 <div class="info-item">
                     <div class="info-label">Ano Escolar</div>
-                    <div class="info-value">{{ aluno.ano_escolar|default:"Não informado" }}</div>
+                    <div class="info-value">{{ aluno.get_ano_escolar_display|default:"Não informado" }}</div>
                 </div>
             </div>
         </div>

@@ -424,6 +424,11 @@
                 <span class="info-label">Frequência Média:</span>
                 <span>{{ frequencia_media }} atendimento(s)</span>
             </div>
+            
+            <div class="info-item">
+                <span class="info-label">Ausências:</span>
+                <span>{{ total_ausencias|default:0 }}</span>
+            </div>
         </div>
 
         <div class="section">

@@ -105,17 +105,17 @@
                     <thead>
                       <tr>
                         {% if request.GET.neurodivergente__id__exact %}
-                          <!-- Cabeçalho para lista de PEIs de um aluno específico -->
+                          <!-- Cabeçalho para lista de PAEEs de um aluno específico -->
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Aluno/Paciente</th>
-                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Mês/Ano</th>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Ano</th>
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Metas</th>
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Ações</th>
                         {% else %}
-                          <!-- Cabeçalho para lista geral de PEIs -->
+                          <!-- Cabeçalho para lista geral de PAEEs -->
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Aluno/Paciente</th>
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Idade/Sexo</th>
-                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Total de PEIs</th>
-                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Último PEI</th>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Total de PAEEs</th>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Último PAEE</th>
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Status</th>
                           <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2 text-center">Ações</th>
                         {% endif %}
@@ -159,10 +159,10 @@
                           </td>
                           
                           {% if request.GET.neurodivergente__id__exact %}
-                            <!-- Dados para lista de PEIs de um aluno específico -->
+                            <!-- Dados para lista de PAEEs de um aluno específico -->
                             <td class="text-center">
                               <span class="badge badge-sm" style="background-color: {% if obj.neurodivergente.genero == 'M' %}#a8d8f0{% else %}#f8d0d3{% endif %}">
-                                {{ obj.get_mes_display }}/{{ obj.ano }}
+                                {{ obj.ano }}
                               </span>
                             </td>
                             <td>
@@ -182,7 +182,7 @@
                               </div>
                             </td>
                           {% else %}
-                            <!-- Dados para lista geral de PEIs -->
+                            <!-- Dados para lista geral de PAEEs -->
                             <td>
                               {% if obj.neurodivergente %}
                                 <p class="text-xs font-weight-bold mb-0">{{ obj.neurodivergente.idade }} anos</p>
@@ -201,7 +201,7 @@
                             <td class="align-middle text-center">
                               {% if obj.neurodivergente %}
                                 <span class="badge badge-sm" style="background-color: {% if obj.neurodivergente.genero == 'M' %}#a8d8f0{% else %}#f8d0d3{% endif %}">
-                                  {{ obj.get_mes_display }}/{{ obj.ano }}
+                                  {{ obj.ano }}
                                 </span>
                               {% else %}
                                 <span class="badge badge-sm" style="background-color: #9E9E9E">-</span>

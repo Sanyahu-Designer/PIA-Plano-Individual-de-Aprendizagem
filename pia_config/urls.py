@@ -4,7 +4,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.models import User, Group
-from .views import CustomLoginView, dashboard_gerente, genero_por_neurodivergencia, ausencias_por_aluno, alunos_por_profissional, distribuicao_por_neurodivergencia, especializacao_profissionais, alunos_em_risco
+from .views import CustomLoginView, dashboard_gerente, genero_por_neurodivergencia, ausencias_por_aluno, alunos_por_profissional, distribuicao_por_neurodivergencia, especializacao_profissionais, alunos_em_risco, index_view, custom_logout, atendimentos_mensais_profissional, lista_profissionais_api
 from .views_perfil import perfil_usuario
 from django.conf import settings
 from django.conf.urls.static import static
@@ -37,6 +37,8 @@ urlpatterns = [
     path('api/distribuicao-por-neurodivergencia/', distribuicao_por_neurodivergencia, name='distribuicao_por_neurodivergencia'),
     path('api/especializacao-profissionais/', especializacao_profissionais, name='especializacao_profissionais'),
     path('api/alunos-em-risco/', alunos_em_risco, name='alunos_em_risco'),
+    path('api/atendimentos-mensais-profissional/', atendimentos_mensais_profissional, name='atendimentos_mensais_profissional'),
+    path('api/lista-profissionais/', lista_profissionais_api, name='lista_profissionais_api'),
     path('dashboard/admin/metashabilidades/metahabilidade/', staff_member_required(lambda request: TemplateResponse(request, 'admin/metashabilidades/metahabilidade/change_list_material_dashboard.html', {'title': 'Metas/Habilidades'})), name='metahabilidade_dashboard'),
     path('dashboard/admin/auth/', staff_member_required(lambda request: TemplateResponse(request, 'admin/auth/app_index.html', {
         'title': 'Autenticação e Autorização',
@@ -91,13 +93,12 @@ urlpatterns = [
     path('dashboard/perfil/', perfil_usuario, name='auth_user_perfil'),
     
     # Outras URLs
-    path('', CustomLoginView.as_view(
+    path('', index_view, name='index'),
+    path('login/', CustomLoginView.as_view(
         template_name='pia_config/login.html',
         next_page='/dashboard/'
     ), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(
-        next_page='/'
-    ), name='logout'),
+    path('logout/', custom_logout, name='logout'),
     path('escolas/', include('escola.urls')),
     path('profissionais/', include('profissionais_app.urls')),
     path('neurodivergentes/', include('neurodivergentes.urls')),

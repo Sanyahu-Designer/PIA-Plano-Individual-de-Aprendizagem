@@ -38,3 +38,5 @@ weasyprint==63.0
 webencodings==0.5.1
 whitenoise==6.8.2
 zopfli==0.2.3.post1
+dropbox==11.36.2
+django-multitenant==3.2.0

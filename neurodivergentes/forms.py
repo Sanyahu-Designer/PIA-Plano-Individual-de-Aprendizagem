@@ -35,15 +35,26 @@ class NeurodivergenteForms(forms.ModelForm):
                 'class': 'form-check-input',
                 'style': 'margin-left: 0.5rem;'
             }),
+            'motivo_inatividade': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Descreva o motivo da inatividade (ex: transferência de cidade, mudança de escola, etc.)',
+                'style': 'width: 100%;'
+            }),
             'nacionalidade': forms.Select(attrs={
                 'class': 'form-select select2',
                 'data-placeholder': 'Selecione a nacionalidade',
                 'data-minimum-results-for-search': '0',
                 'style': 'width: 100%;'
             }),
+            'naturalidade': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: São Paulo - SP, Rio de Janeiro - RJ',
+                'style': 'width: 100%;'
+            }),
             'pais_origem': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Informe o país de origem (opcional)',
+                'placeholder': 'Ex: Argentina, Estados Unidos',
                 'style': 'width: 100%;'
             }),
             'cor_pele': forms.Select(attrs={
@@ -83,21 +94,29 @@ class GrupoFamiliarForm(forms.ModelForm):
                 attrs={'type': 'date'},
                 format='%Y-%m-%d'
             ),
-            'escola': forms.Select(attrs={
-                'class': 'form-select select2',
-                'data-placeholder': 'Selecione a escola',
-                'data-minimum-results-for-search': '0',
+            'vinculo': forms.Select(attrs={
+                'class': 'form-control',
                 'style': 'width: 100%;'
             }),
-            'ano_escolar': forms.Select(attrs={
-                'class': 'form-select select2',
-                'data-placeholder': 'Selecione o ano escolar',
-                'data-minimum-results-for-search': '0',
+            'primeiro_nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Primeiro nome',
                 'style': 'width: 100%;'
             }),
-            'ativo': forms.CheckboxInput(attrs={
-                'class': 'form-check-input',
-                'style': 'margin-left: 0.5rem;'
+            'ultimo_nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Último nome',
+                'style': 'width: 100%;'
+            }),
+            'outro_vinculo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Especifique o vínculo',
+                'style': 'width: 100%;'
+            }),
+            'ocupacao': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ocupação',
+                'style': 'width: 100%;'
             })
         }
 
@@ -227,41 +246,39 @@ class MonitoramentoForm(forms.ModelForm):
 
     class Meta:
         model = Monitoramento
-        fields = ['neurodivergente', 'mes', 'ano', 'metas', 'observacoes', 'pedagogo_responsavel']
+        fields = ['neurodivergente', 'ano', 'metas', 'pedagogo_responsavel', 'observacoes']
         widgets = {
-            'mes': forms.Select(attrs={'class': 'select2', 'style': 'width: 100%;'}),
             'ano': forms.NumberInput(attrs={'min': 2020, 'max': 2050}),
             'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
                 'rows': 4,
-                'placeholder': 'Observações sobre o progresso'
+                'placeholder': 'Descreva o planejamento para esta meta/habilidade',
+                'style': 'width: 100%;'
             })
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Pré-preenche com o mês/ano atual se for um novo registro
+        # Pré-preenche com o ano atual se for um novo registro
         if not self.instance.pk:
             self.initial.update({
-                'mes': timezone.now().month,
                 'ano': timezone.now().year
             })
 
     def clean(self):
         cleaned_data = super().clean()
-        mes = cleaned_data.get('mes')
         ano = cleaned_data.get('ano')
         neurodivergente = cleaned_data.get('neurodivergente')
         metas = cleaned_data.get('metas')
 
-        if mes and ano and neurodivergente:
-            # Verifica se já existe um PEI para este mês/ano/aluno
+        if ano and neurodivergente:
+            # Verifica se já existe um PAEE para este ano/aluno
             if Monitoramento.objects.filter(
                 neurodivergente=neurodivergente,
-                mes=mes,
                 ano=ano
             ).exclude(pk=self.instance.pk if self.instance else None).exists():
                 raise forms.ValidationError(
-                    'Já existe um PEI para este aluno neste mês/ano.'
+                    'Já existe um PAEE para este aluno neste ano.'
                 )
 
         return cleaned_data

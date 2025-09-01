@@ -70,18 +70,20 @@ class Neurodivergente(models.Model):
         ('O+', 'O+'),
         ('O-', 'O-'),
     ]
-    nacionalidade = models.CharField('Nacionalidade', max_length=20, choices=NACIONALIDADE_CHOICES, blank=True)
-    pais_origem = models.CharField('País de Origem', max_length=50, blank=True)
-    cor_pele = models.CharField('Cor da Pele', max_length=10, choices=COR_PELE_CHOICES, blank=True)
-    tipo_sanguineo = models.CharField('Tipo Sanguíneo', max_length=3, choices=TIPO_SANGUINEO_CHOICES, blank=True)
+    nacionalidade = models.CharField('Nacionalidade', max_length=20, choices=NACIONALIDADE_CHOICES, blank=True, help_text="Selecione se é brasileira ou estrangeira")
+    naturalidade = models.CharField('Naturalidade', max_length=100, blank=True, null=True, help_text="Cidade e estado de nascimento (ex: São Paulo - SP)")
+    pais_origem = models.CharField('País de Origem', max_length=50, blank=True, help_text="Informe o país de origem caso seja estrangeiro")
+    cor_pele = models.CharField('Cor da Pele', max_length=10, choices=COR_PELE_CHOICES, blank=True, help_text="Selecione a cor da pele conforme autodeclaração")
+    tipo_sanguineo = models.CharField('Tipo Sanguíneo', max_length=3, choices=TIPO_SANGUINEO_CHOICES, blank=True, help_text="Selecione o tipo sanguíneo se conhecido")
     
     # Localização
     estado_nascimento = models.CharField(
         'Estado de Nascimento',
         max_length=2,
-        choices=ESTADOS_CHOICES
+        choices=ESTADOS_CHOICES,
+        blank=True
     )
-    cidade_nascimento = models.CharField('Cidade de Nascimento', max_length=100)
+    cidade_nascimento = models.CharField('Cidade de Nascimento', max_length=100, blank=True)
     
     # Endereço
     cep = models.CharField(
@@ -138,15 +140,47 @@ class Neurodivergente(models.Model):
         blank=True,
         related_name='alunos'
     )
-    ano_escolar = models.ForeignKey(
-        'neurodivergentes.SeriesCursadas',
-        verbose_name='Ano Escolar',
-        on_delete=models.SET_NULL,
-        null=True,
+    
+    SERIES_CHOICES = [
+        ('', '---------'),
+        ('EDUCAÇÃO INFANTIL', (
+            ('bercario1', 'Berçário I'),
+            ('bercario2', 'Berçário II'),
+            ('maternal1', 'Maternal I'),
+            ('maternal2', 'Maternal II'),
+            ('jardim', 'Jardim'),
+            ('pre1', 'Pré I'),
+            ('pre2', 'Pré II'),
+        )),
+        ('ENSINO FUNDAMENTAL I', (
+            ('1ano', '1º Ano'),
+            ('2ano', '2º Ano'),
+            ('3ano', '3º Ano'),
+            ('4ano', '4º Ano'),
+            ('5ano', '5º Ano'),
+        )),
+        ('ENSINO FUNDAMENTAL II', (
+            ('6ano', '6º Ano'),
+            ('7ano', '7º Ano'),
+            ('8ano', '8º Ano'),
+            ('9ano', '9º Ano'),
+        )),
+    ]
+    
+    ano_escolar = models.CharField(
+        'Ano Escolar',
+        max_length=50,
+        choices=[item for group in SERIES_CHOICES[1:] for item in group[1]],
         blank=True,
-        related_name='alunos'
+        null=True
     )
     ativo = models.BooleanField('Ativo', default=True)
+    motivo_inatividade = models.TextField(
+        'Motivo da Inatividade',
+        blank=True,
+        null=True,
+        help_text='Descreva o motivo da inatividade (ex: transferência de cidade, mudança de escola, etc.)'
+    )
     
     # Campos de controle
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
@@ -183,14 +217,11 @@ class Neurodivergente(models.Model):
     def clean(self):
         super().clean()
         
-        # Formata o CEP
-        if self.cep:
-            cep = ''.join(filter(str.isdigit, self.cep))
-            if len(cep) == 8:
-                self.cep = f'{cep[:5]}-{cep[5:]}'
+        # Não formata o CEP aqui pois já é formatado no formulário
+        # para evitar conflito de formatação dupla
         
-        # Formata o celular
-        if self.celular:
+        # Formata o celular apenas se não estiver formatado
+        if self.celular and not self.celular.startswith('('):
             celular = ''.join(filter(str.isdigit, self.celular))
             if len(celular) == 11:
                 self.celular = f'({celular[:2]}) {celular[2:7]}-{celular[7:]}'
